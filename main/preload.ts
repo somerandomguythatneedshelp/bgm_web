@@ -17,4 +17,11 @@ const handler = {
 
 contextBridge.exposeInMainWorld('ipc', handler)
 
+contextBridge.exposeInMainWorld('electronAPI', {
+  minimize: () => ipcRenderer.send('minimize-window'),
+  maximize: () => ipcRenderer.send('maximize-window'),
+  close: () => ipcRenderer.send('close-window'),
+});
+
+
 export type IpcHandler = typeof handler
