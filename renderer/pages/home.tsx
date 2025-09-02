@@ -132,12 +132,15 @@ export default function HomePage() {
             console.log("Message from C++:", event.data);
             if (event.data === "emailconfirmation") {
                 setUiState('verify'); 
+                setStatusMessage(""); //clear
             } else if (event.data === "emailalreadyexists") {
                 setVerifyError("An account with this email already exists.");
             } else if (event.data === "invalidconfirmationcode") {
                 setVerifyError("The verification code is incorrect. Please try again.");
             } else if (event.data === "useralreadyexists") {
-                setStatusMessage("Username already taken. Please choose another.");
+                setVerifyError("Username already taken. Please choose another.");
+            } else if (event.data === "userconfirmed") {
+                
             }
         };
 
