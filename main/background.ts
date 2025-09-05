@@ -25,7 +25,7 @@ let mainWindow: Electron.BrowserWindow
       preload: path.join(__dirname, 'preload.js'),
     },
   })
-
+  
   if (isProd) {
     await mainWindow.loadURL('app://./home')
   } else {

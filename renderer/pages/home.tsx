@@ -36,6 +36,156 @@ const PasswordStrengthIndicator = ({ password }) => {
     );
 };
 
+const MusicPlayerUI = () => {
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [duration] = useState(180) // 3 minutes
+  const [showLyrics, setShowLyrics] = useState(false)
+
+  useEffect(() => {
+    let interval
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setCurrentTime((prev) => (prev < duration ? prev + 1 : 0))
+      }, 1000)
+    }
+    return () => clearInterval(interval)
+  }, [isPlaying, duration])
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, "0")}`
+  }
+
+  return (
+    <div className="w-full max-w-4xl">
+      <div className="relative overflow-hidden rounded-2xl">
+        {/* Background Cover Art - same as album art */}
+        <div className="absolute inset-0">
+          <img
+            src="/abstract-music-visualization-dark-background.jpg"
+            alt="Album Cover"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+        </div>
+
+        <div className="relative p-8">
+          <div className="flex items-center gap-6">
+            {/* Album Art - same as background with liquid glass effect */}
+            <div className="relative">
+              <img
+                src="/abstract-music-visualization-dark-background.jpg"
+                alt="Current Track"
+                className="w-24 h-24 rounded-lg shadow-lg"
+              />
+              <div className="absolute inset-0 bg-black/20 backdrop-blur-sm rounded-lg border border-white/20" />
+            </div>
+
+            {/* Track Info */}
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-white mb-1 drop-shadow-lg">Midnight Vibes</h2>
+              <p className="text-gray-200 text-lg drop-shadow-md">The Synthwave Collective</p>
+              <p className="text-gray-300 text-sm drop-shadow-md">Electronic • 2024</p>
+            </div>
+
+            {/* Controls */}
+            <div className="flex items-center gap-4">
+              <button className="p-3 rounded-full bg-black/30 backdrop-blur-md hover:bg-black/50 transition-all duration-200 border border-white/20">
+                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setIsPlaying(!isPlaying)}
+                className="p-4 rounded-full bg-white/90 hover:bg-white transition-all duration-200 shadow-lg hover:scale-105 backdrop-blur-sm"
+              >
+                {isPlaying ? (
+                  <svg className="w-8 h-8 text-black" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                  </svg>
+                ) : (
+                  <svg className="w-8 h-8 text-black" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                )}
+              </button>
+              <button className="p-3 rounded-full bg-black/30 backdrop-blur-md hover:bg-black/50 transition-all duration-200 border border-white/20">
+                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setShowLyrics(!showLyrics)}
+                className="p-3 rounded-full bg-black/30 backdrop-blur-md hover:bg-black/50 transition-all duration-200 border border-white/20"
+              >
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="mt-6 flex items-center gap-3">
+            <span className="text-xs text-white drop-shadow-md w-10">{formatTime(currentTime)}</span>
+            <div className="flex-1 bg-black/30 backdrop-blur-sm rounded-full h-1 overflow-hidden border border-white/20">
+              <div
+                className="bg-white h-full transition-all duration-1000 ease-linear shadow-sm"
+                style={{ width: `${(currentTime / duration) * 100}%` }}
+              />
+            </div>
+            <span className="text-xs text-white drop-shadow-md w-10">{formatTime(duration)}</span>
+          </div>
+
+          <div
+            className={`overflow-hidden transition-all duration-500 ease-in-out ${
+              showLyrics ? "max-h-96 opacity-100 mt-6" : "max-h-0 opacity-0"
+            }`}
+          >
+            <div className="p-6 rounded-xl bg-black backdrop-blur-md border border-white/20">
+              <h3 className="text-lg font-semibold text-white mb-4 drop-shadow-md">Lyrics</h3>
+              <div className="leading-relaxed space-y-2">
+                <p className="text-white font-medium">In the midnight hour, when the city sleeps</p>
+                <p className="text-gray-100">Neon lights are dancing, secrets that we keep</p>
+                <p className="text-gray-100">Synthesizers calling through the electric night</p>
+                <p className="text-gray-100">Lost in waves of sound, everything's alright</p>
+                <p className="mt-4 text-white font-medium">Midnight vibes, flowing through my soul</p>
+                <p className="text-gray-100">Electronic dreams, making me whole</p>
+                <p className="text-gray-100">In this digital world, we find our way</p>
+                <p className="text-gray-100">Through the midnight vibes, until the break of day</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 grid grid-cols-3 gap-4">
+        {["Recently Played", "Your Library", "Discover"].map((action, index) => (
+          <button
+            key={action}
+            className="p-4 rounded-xl bg-black/20 backdrop-blur-md border border-white/10 hover:bg-black/30 transition-all duration-200 text-left"
+          >
+            <div className="text-white font-medium drop-shadow-md">{action}</div>
+            <div className="text-gray-300 text-sm mt-1 drop-shadow-sm">
+              {index === 0 && "Jump back in"}
+              {index === 1 && "Made for you"}
+              {index === 2 && "New releases"}
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+
 const VerificationCodeForm = ({ onVerify, email, errorText }) => {
     const [code, setCode] = useState(Array(6).fill(""));
     const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
@@ -117,7 +267,7 @@ export default function HomePage() {
     const [password, setPassword] = useState("");
     const [isRegistering, setIsRegistering] = useState(false);
     const [statusMessage, setStatusMessage] = useState("");
-    const [uiState, setUiState] = useState('auth'); // 'auth' or 'verify'
+    const [uiState, setUiState] = useState('auth'); 
     const ws = useRef<WebSocket | null>(null);
     const [verifyError, setVerifyError] = useState("");
 
@@ -139,10 +289,13 @@ export default function HomePage() {
                 setVerifyError("The verification code is incorrect. Please try again.");
             } else if (event.data === "useralreadyexists") {
                 setVerifyError("Username already taken. Please choose another.");
-            } else if (event.data === "userconfirmed") {
-                
+            } else if (event.data === "userauthenticated") {
+                setUiState('home');
+                setVerifyError("");
+                setStatusMessage("");
             }
         };
+         setUiState("home")
 
         return () => socket.close();
     }, []);
@@ -221,10 +374,15 @@ export default function HomePage() {
         <div className="flex min-h-screen flex-col items-center justify-center bg-[#111111] font-sans text-white">
             <TitleBar />
             <main className="flex flex-col items-center justify-center pt-[33px]" style={{ minHeight: '100vh' }}>
-                {uiState === 'auth' 
-                    ? renderAuthForm() 
-                    : <VerificationCodeForm onVerify={handleVerificationSubmit} email={email} errorText={verifyError} />
-                }
+                {uiState === 'auth' && renderAuthForm()}
+                {uiState === 'verify' && (
+        <VerificationCodeForm 
+            onVerify={handleVerificationSubmit} 
+            email={email} 
+            errorText={verifyError} 
+        />
+    )}
+                {uiState === 'home' && <MusicPlayerUI />}
             </main>
         </div>
     );
