@@ -2,6 +2,23 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import TitleBar from "./components/Titlebar";
+import { GlobalKeyboardListener } from 'node-global-key-listener';
+
+interface Track {
+    songId: number;
+    song_name: string;
+    artist_name: string;
+    album: string;
+    coverArtUrl: string;
+    lyrics?: string;
+    song_length_sec: number;
+}
+
+interface Playlist {
+  name: string;
+  track_ids: number[];
+  tracks?: Track[];
+}
 
 const AuthIcon = () => (
     <svg 
@@ -18,27 +35,30 @@ const AuthIcon = () => (
         />
     </svg>
 );
+
 const LyricsPlayer = ({ lyrics, currentTime }) => {
     const [activeLineIndex, setActiveLineIndex] = useState(-1);
     const scrollContainerRef = useRef(null);
 
+    const customScrollbarStyles = `
+        .scrollbar-custom::-webkit-scrollbar { width: 8px; }
+        .scrollbar-custom::-webkit-scrollbar-track { background: transparent; }
+        .scrollbar-custom::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+        .scrollbar-custom::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.4); }
+    `;
+
     useEffect(() => {
         if (!lyrics || lyrics.length === 0) return;
         
-        // **THE FIX**: Iterate forward from the start of the song to find the current line.
         let newIndex = -1;
         for (let i = 0; i < lyrics.length; i++) {
             if (currentTime >= lyrics[i].time) {
                 newIndex = i;
             } else {
-                // Since the array is sorted by time, we can stop early.
                 break; 
             }
         }
-
-        if (newIndex !== activeLineIndex) {
-            setActiveLineIndex(newIndex);
-        }
+        if (newIndex !== activeLineIndex) setActiveLineIndex(newIndex);
     }, [currentTime, lyrics, activeLineIndex]);
 
     useEffect(() => {
@@ -62,88 +82,63 @@ const LyricsPlayer = ({ lyrics, currentTime }) => {
     }
 
     return (
-        <div ref={scrollContainerRef} className="h-full overflow-y-auto text-center p-4 scrollbar-hide">
-            {lyrics.map((line, index) => {
-                const isActive = index === activeLineIndex;
-                const isPast = index < activeLineIndex;
-
-                return (
-                    <p key={index} className={`transition-all duration-300 text-2xl p-2 font-semibold ${isActive ? 'text-white scale-105' : 'scale-100'} ${isPast ? 'text-gray-500' : 'text-gray-400'}`}>
-                        {line.text}
-                    </p>
-                );
-            })}
-        </div>
+        <>
+            <style>{customScrollbarStyles}</style>
+            <div ref={scrollContainerRef} className="h-full overflow-y-auto text-center p-4 scrollbar-custom">
+                {lyrics.map((line, index) => {
+                    const isActive = index === activeLineIndex;
+                    const isPast = index < activeLineIndex;
+                    return (
+                        <p key={index} className={`transition-all duration-300 text-2xl p-2 font-semibold ${isActive ? 'text-white scale-105' : 'scale-100'} ${isPast ? 'text-gray-500' : 'text-gray-400'}`}>
+                            {line.text}
+                        </p>
+                    );
+                })}
+            </div>
+        </>
     );
 };
 
-const MusicPlayerUI = ({ trackInfo, onSearch, isPlaying, onTogglePlayPause }) => {
-    const [currentTime, setCurrentTime] = useState(0);
+const MusicPlayerUI = ({ trackInfo, onSearch, isPlaying, onTogglePlayPause, currentTime, setCurrentTime, onShowPlaylists }) => {
     const [showLyrics, setShowLyrics] = useState(false);
     const [isLiked, setIsLiked] = useState(false);
     const [lyrics, setLyrics] = useState([]);
 
     const {
-        title = "...",
-        artist = "...",
+        song_name = "...",
+        artist_name = "...",
         album = "...",
         coverArtUrl = "",
         song_length_sec = 0,
-        lyrics: rawLyrics = ""
+        lyrics: lyricsUrl = ""
     } = trackInfo || {};
 
+        useEffect(() => {
+        let interval;
+        if (isPlaying) {
+            interval = setInterval(() => {
+                setCurrentTime((prev) => (prev < song_length_sec ? prev + 0.1 : 0));
+            }, 100);
+        }
+        return () => clearInterval(interval);
+    }, [isPlaying, song_length_sec]);
+
     useEffect(() => {
-        if (rawLyrics) {
+        if (lyricsUrl) {
             try {
-                const parsedData = JSON.parse(rawLyrics);
-                if (!Array.isArray(parsedData)) {
+                const parsedData = JSON.parse(lyricsUrl);
+                if (Array.isArray(parsedData)) {
+                    setLyrics(parsedData);
+                } else {
                     setLyrics([]);
-                    return;
                 }
-                
-                // **THE FIX**: Correct logic to group words into lines/verses
-                const lines = [];
-                let currentLine = { time: 0, text: '' };
-
-                parsedData.forEach((wordData, index) => {
-                    const word = wordData.word || '';
-                    const startTime = wordData.start || 0;
-
-                    if (word.trim().length === 0) return;
-
-                    const isCapitalized = word[0] >= 'A' && word[0] <= 'Z';
-                    if (index > 0 && isCapitalized) {
-                        if (currentLine.text) lines.push(currentLine);
-                        currentLine = { time: startTime, text: word };
-                    } else {
-                        if (currentLine.text === '') {
-                             currentLine = { time: startTime, text: word };
-                        } else {
-                            currentLine.text += ` ${word}`;
-                        }
-                    }
-                });
-                
-                if (currentLine.text) lines.push(currentLine);
-                setLyrics(lines);
-                
             } catch (e) {
                 setLyrics([]);
             }
         } else {
             setLyrics([]);
         }
-    }, [rawLyrics]);
-
-    useEffect(() => {
-        let interval;
-        if (isPlaying) {
-            interval = setInterval(() => {
-                setCurrentTime((prev) => (prev < song_length_sec ? prev + 1 : 0));
-            }, 1000);
-        }
-        return () => clearInterval(interval);
-    }, [isPlaying, song_length_sec]);
+    }, [lyricsUrl]);
 
     const formatTime = (seconds) => {
         const totalSeconds = Math.floor(seconds);
@@ -154,36 +149,34 @@ const MusicPlayerUI = ({ trackInfo, onSearch, isPlaying, onTogglePlayPause }) =>
 
     return (
         <div className="w-full flex flex-col items-center">
-            {/* **THE FIX**: This outer container handles the layout */}
-            <div className="w-full max-w-7xl flex items-center justify-center gap-8">
+            <div className="w-full max-w-7xl flex items-center justify-center gap-8 relative h-[24rem]">
 
-                {/* Player Card: Fixed size, moves with a smooth transition */}
-                <div className={`transition-transform duration-700 ease-in-out ${showLyrics ? '-translate-x-1/4' : ''}`}>
+                {/* Player Card: Translates left, but its container stays centered */}
+                <div className={`transition-transform duration-700 ease-in-out ${showLyrics ? 'md:-translate-x-1/2' : 'md:translate-x-0'}`}>
+                    {/* **THE FIX**: Changed max-w-xl to max-w-2xl */}
                     <div className="w-full max-w-2xl bg-black/25 backdrop-blur-lg rounded-2xl border border-white/10 shadow-2xl flex flex-col md:flex-row p-6 gap-6 items-center">
                         <img
                             src={coverArtUrl}
                             alt="Current Track"
-                            className="w-48 h-48 md:w-64 md:h-64 object-cover rounded-lg shadow-lg flex-shrink-0"
+                            className="w-48 h-48 md:w-56 md:h-56 object-cover rounded-lg shadow-lg flex-shrink-0"
                         />
                         <div className="flex flex-col flex-1 justify-center w-full h-full">
                            <div className="text-center md:text-left">
-                                <h2 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">{title}</h2>
-                                <p className="text-lg md:text-xl text-gray-200 mt-1 drop-shadow-md">{artist}</p>
+                                <h2 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">{song_name}</h2>
+                                <p className="text-lg md:text-xl text-gray-200 mt-1 drop-shadow-md">{artist_name}</p>
                                 <p className="text-md text-gray-300 drop-shadow-md">{album}</p>
                             </div>
                             <div className="mt-6">
                                 <div className="flex items-center gap-3">
                                     <span className="text-xs text-white/80 w-10 text-center">{formatTime(currentTime)}</span>
-                                    <div className="flex-1 bg-white/10 rounded-full h-1.5 group">
-                                        <div className="bg-white h-full rounded-full relative" style={{ width: `${(currentTime / song_length_sec) * 100}%` }} />
-                                    </div>
+                                    <div className="flex-1 bg-white/10 rounded-full h-1.5 group"><div className="bg-white h-full rounded-full" style={{ width: `${(currentTime / song_length_sec) * 100}%` }} /></div>
                                     <span className="text-xs text-white/80 w-10 text-center">{formatTime(song_length_sec)}</span>
                                 </div>
                                 <div className="mt-4 flex items-center justify-between gap-4">
                                     <button onClick={() => setIsLiked(!isLiked)} className="p-2 text-gray-400 hover:text-white"><svg className={`w-6 h-6 ${isLiked ? 'text-purple-500' : ''}`} fill={isLiked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z" /></svg></button>
                                     <div className="flex items-center gap-4">
                                         <button className="p-2 rounded-full text-gray-300 hover:text-white hover:bg-white/10"><svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" /></svg></button>
-                                        <button onClick={onTogglePlayPause} className="p-5 rounded-full bg-white text-black hover:scale-105 shadow-lg hover:shadow-purple-500/40 transition"><svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d={isPlaying ? "M6 19h4V5H6v14zm8-14v14h4V5h-4z" : "M8 5v14l11-7z"} /></svg></button>
+                                        <button onClick={onTogglePlayPause} className="p-5 rounded-full bg-white text-gray-900 hover:scale-105 shadow-lg hover:shadow-purple-500/40 transition"><svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d={isPlaying ? "M6 19h4V5H6v14zm8-14v14h4V5h-4z" : "M8 5v14l11-7z"} /></svg></button>
                                         <button className="p-2 rounded-full text-gray-300 hover:text-white hover:bg-white/10"><svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" /></svg></button>
                                     </div>
                                     <button onClick={() => setShowLyrics(!showLyrics)} className={`p-2 ${showLyrics ? 'text-purple-400' : 'text-gray-400'} hover:text-white`}>
@@ -195,9 +188,8 @@ const MusicPlayerUI = ({ trackInfo, onSearch, isPlaying, onTogglePlayPause }) =>
                     </div>
                 </div>
 
-                {/* Lyrics Panel */}
-                <div className={`transition-all duration-700 ease-in-out w-full md:w-1/2 flex-shrink-0 ${showLyrics ? 'opacity-100' : 'opacity-0 w-0'}`}>
-                    <div className="h-96 bg-black/25 backdrop-blur-lg rounded-2xl border border-white/10 shadow-2xl">
+                <div className={`absolute right-0 transition-all duration-700 ease-in-out w-full md:w-1/2 flex-shrink-0 ${showLyrics ? 'opacity-100' : 'opacity-0 -z-10'}`}>
+                    <div className="h-[22rem] bg-black/25 backdrop-blur-lg rounded-2xl border border-white/10 shadow-2xl">
                         <LyricsPlayer lyrics={lyrics} currentTime={currentTime} />
                     </div>
                 </div>
@@ -206,12 +198,18 @@ const MusicPlayerUI = ({ trackInfo, onSearch, isPlaying, onTogglePlayPause }) =>
             <div className="w-full max-w-5xl">
                 <SearchBar onSearch={onSearch} />
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {["Recently Played", "Your Library", "Discover"].map((action, i) => (
-                        <button key={action} className="p-4 rounded-xl bg-black/20 backdrop-blur-md border border-white/10 hover:bg-black/30 text-left">
-                            <div className="text-white font-medium">{action}</div>
-                            <div className="text-gray-300 text-sm mt-1">{["Jump back in", "Made for you", "New releases"][i]}</div>
-                        </button>
-                    ))}
+                    <button onClick={onShowPlaylists} className="p-4 rounded-xl bg-black/20 backdrop-blur-md border border-white/10 hover:bg-black/30 text-left">
+                        <div className="text-white font-medium">Your Playlists</div>
+                        <div className="text-gray-300 text-sm mt-1">View and manage your playlists</div>
+                    </button>
+                    <button className="p-4 rounded-xl bg-black/20 backdrop-blur-md border border-white/10 hover:bg-black/30 text-left">
+                        <div className="text-white font-medium">Recently Played</div>
+                        <div className="text-gray-300 text-sm mt-1">Jump back in</div>
+                    </button>
+                    <button className="p-4 rounded-xl bg-black/20 backdrop-blur-md border border-white/10 hover:bg-black/30 text-left">
+                        <div className="text-white font-medium">Discover</div>
+                        <div className="text-gray-300 text-sm mt-1">New releases</div>
+                    </button>
                 </div>
             </div>
         </div>
@@ -237,7 +235,7 @@ const SearchBar = ({ onSearch }) => {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search for a song or artist..."
-                    className="w-full p-4 pl-12 rounded-xl bg-black/30 backdrop-blur-md border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300"
+                    className="w-full p-4 pl-12 rounded-xl bg-black/30 backdrop-blur-md border border-white/20 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300"
                 />
                 <div className="absolute left-4 top-1/2 -translate-y-1/2">
                     <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -343,7 +341,7 @@ const VerificationCodeForm = ({ onVerify, email, errorText }) => {
                             value={digit}
                             onChange={(e) => handleInputChange(e, index)}
                             onKeyDown={(e) => handleKeyDown(e, index)}
-                            className="w-12 h-14 text-center text-2xl font-bold rounded-md border border-gray-700 bg-transparent text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            className="w-12 h-14 text-center text-2xl font-bold rounded-md border border-gray-700 bg-transparent text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
                         />
                     ))}
                 </div>
@@ -355,8 +353,134 @@ const VerificationCodeForm = ({ onVerify, email, errorText }) => {
     );
 };
 
+const PlaylistsUI = ({ playlists, currentTrack, sendMessage, onBack, onGetPlaylistDetails }) => {
+    const [newPlaylistName, setNewPlaylistName] = useState('');
+    const [showAddSong, setShowAddSong] = useState(false);
+    const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null);
+
+    const handleCreatePlaylist = () => {
+        if (newPlaylistName.trim()) {
+            sendMessage(`CreatePlaylist: ${newPlaylistName.trim()}`);
+            setNewPlaylistName('');
+        }
+    };
+
+    const handleAddTrackToPlaylist = (playlistName: string) => {
+        if (currentTrack && typeof currentTrack.songId === 'number') {
+      sendMessage(`AddSongToPlaylist: ${playlistName}|${currentTrack.songId}`);
+    } else {
+      console.error("Cannot add to playlist: Invalid songId.", currentTrack);
+    }
+        setShowAddSong(false);
+    };
+
+    const handleRemoveTrack = (playlistName: string, songId: number) => {
+        sendMessage(`RemoveSongFromPlaylist: ${playlistName}|${songId}`);
+    };
+    
+    const handlePlayPlaylist = (name: string) => {
+        sendMessage(`PlayPlaylist: ${name}`);
+    };
+    
+    const handleDeletePlaylist = (name: string) => {
+        if (window.confirm(`Are you sure you want to delete the playlist "${name}"?`)) {
+            sendMessage(`DeletePlaylist: ${name}`);
+        }
+    };
+
+    const handleSelectPlaylist = (name: string) => {
+    // If it's already selected, collapse it.
+    if (selectedPlaylist === name) {
+      setSelectedPlaylist(null);
+      return;
+    }
+
+    setSelectedPlaylist(name);
+    const playlist = playlists[name];
+    // If the detailed tracks for this playlist haven't been loaded yet, request them.
+    if (!playlist.tracks || playlist.tracks.length === 0) {
+      onGetPlaylistDetails(name);
+    }
+  };
+
+    return (
+        <div className="w-full max-w-5xl h-[32rem] bg-black/25 backdrop-blur-lg rounded-2xl border border-white/10 shadow-2xl flex flex-col p-6 text-white">
+            <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                <button onClick={onBack} className="p-2 rounded-full hover:bg-white/10">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <h1 className="text-3xl font-bold">Your Playlists</h1>
+                <div className="w-10"></div> {/* Spacer */}
+            </div>
+
+            {/* --- Add to Playlist Dropdown --- */}
+            {currentTrack && (
+                <div className="relative mb-4 text-left">
+                    <button onClick={() => setShowAddSong(!showAddSong)} className="flex items-center gap-2 p-2 rounded-md hover:bg-white/10">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" /></svg>
+                        Add '{currentTrack.song_name}' to Playlist
+                    </button>
+                    {showAddSong && (
+                        <div className="absolute top-full left-0 mt-2 w-56 rounded-md shadow-lg bg-[#1c1c1c] ring-1 ring-white/10">
+                            {Object.keys(playlists).map(name => (
+                                <button key={name} onClick={() => handleAddTrackToPlaylist(name)} className="block w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-white/10">
+                                    {name}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+            
+            <div className="flex-grow overflow-y-auto pr-2 scrollbar-custom">
+                {Object.keys(playlists).length === 0 ? (
+                    <p className="text-gray-400 text-center mt-8">You haven't created any playlists yet.</p>
+                ) : (
+                    Object.entries(playlists).map(([name, tracks]) => (
+                        <div key={name} className="mb-6">
+                            <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-xl font-semibold">{name}</h3>
+                                <div className="flex items-center gap-2">
+                                    <button onClick={() => handlePlayPlaylist(name)} className="p-2 rounded-full hover:bg-white/10" title="Play Playlist">
+                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M4.018 15.132A1 1 0 013 14.218V5.781a1 1 0 011.627-.781l8.438 4.219a1 1 0 010 1.562l-8.438 4.219z" /></svg>
+                                    </button>
+                                    <button onClick={() => handleDeletePlaylist(name)} className="p-2 rounded-full hover:bg-white/10 text-red-400" title="Delete Playlist">
+                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <ul className="space-y-2">
+                                {(tracks as Track[]).map((track, index) => (
+                                    <li key={`${track.songId}-${index}`} className="flex items-center justify-between p-2 rounded-md hover:bg-white/5">
+                                        <span>{track.song_name} - <i className="text-gray-400">{track.artist_name}</i></span>
+                                        <button onClick={() => handleRemoveTrack(name, currentTrack.songId)} className="p-1 rounded-full hover:bg-white/10 text-gray-500 hover:text-white" title="Remove song">
+                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))
+                )}
+            </div>
+            
+            <div className="mt-auto pt-4 border-t border-white/10 flex-shrink-0 flex gap-2">
+                <input
+                    type="text"
+                    value={newPlaylistName}
+                    onChange={(e) => setNewPlaylistName(e.target.value)}
+                    placeholder="New playlist name..."
+                    className="flex-grow p-2 rounded-md bg-black/30 border border-white/20 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                />
+                <button onClick={handleCreatePlaylist} className="p-2 rounded-md bg-purple-600 hover:bg-purple-700">Create</button>
+            </div>
+        </div>
+    );
+};
+
 export default function HomePage() {
     const [trackInfo, setTrackInfo] = useState(null);
+    const [currentTime, setCurrentTime] = useState(0);
     const [song_length_sec, setSongLength] = useState(0);
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
@@ -368,6 +492,11 @@ export default function HomePage() {
     const ws = useRef<WebSocket | null>(null);
     const [lyrics, setLyrics] = useState(null);
     const [verifyError, setVerifyError] = useState("");
+    const [playlists, setPlaylists] = useState<Record<string, Track[]>>({});
+
+    const handleGetPlaylistDetails = (playlistName: string) => {
+    sendMessage(`GetPlaylistDetails: ${playlistName}`);
+  };
 
     useEffect(() => {
         const socket = new WebSocket("ws://localhost:6767");
@@ -382,10 +511,10 @@ export default function HomePage() {
                 const data = JSON.parse(event.data);
                 if (data.type === "track_update") {
                     setTrackInfo(data);
-
-                    if (data.lyricsUrl) {
+                    setCurrentTime(0);
+                    if (data.lyrics) {
                     try {
-                        const parsedLyrics = JSON.parse(data.lyricsUrl);
+                        const parsedLyrics = JSON.parse(data.lyrics);
                         setLyrics(parsedLyrics);
                     } catch (err) {
                         console.error("Failed to parse lyrics JSON", err);
@@ -395,6 +524,8 @@ export default function HomePage() {
 
                 } else if (data.type === "playback_status") {
                     setIsPlaying(data.isPlaying); 
+                } else if (data.type === "playlists_update") { // <-- HANDLE NEW MESSAGE
+                    setPlaylists(data.playlists || {});
                 }
             } catch (e) {
                 // It's not a JSON message, handle as plain text
@@ -420,7 +551,6 @@ export default function HomePage() {
 
     const handleSearchSubmit = (query: string) => {
         console.log("Sending search query:", query);
-        // We format the message with the "Search: " prefix for the C++ backend
         sendCreds(`Search: ${query}`);
     };
 
@@ -485,10 +615,10 @@ export default function HomePage() {
             </div>
             <form onSubmit={handleFormSubmit} className="space-y-4">
                 {isRegistering && (
-                    <input type="email" autoComplete="email" placeholder="Enter your email address" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                    <input type="email" autoComplete="email" placeholder="Enter your email address" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500" />
                 )}
-                <input type="text" autoComplete="username" placeholder="Enter your username" value={username} onChange={(e) => setUsername(e.target.value)} required className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500" />
-                <input type="password" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                <input type="text" autoComplete="username" placeholder="Enter your username" value={username} onChange={(e) => setUsername(e.target.value)} required className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                <input type="password" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500" />
                 
                 {isRegistering && <PasswordStrengthIndicator password={password} />}
                 
@@ -520,6 +650,13 @@ export default function HomePage() {
             <div className="relative z-20 flex h-screen flex-col items-center justify-center p-4">
                 <TitleBar />
                 <main className="w-full flex flex-col items-center justify-center">
+                {uiState === "playlists" && <PlaylistsUI 
+                        playlists={playlists}
+                        currentTrack={trackInfo}
+                        sendMessage={sendMessage}
+                        onBack={() => setUiState('home')}
+                        onGetPlaylistDetails={handleGetPlaylistDetails}
+                    />}
                 {uiState === 'auth' && renderAuthForm()}
                 {uiState === 'verify' && (
                     <VerificationCodeForm 
@@ -533,6 +670,9 @@ export default function HomePage() {
                     onSearch={handleSearchSubmit}
                     isPlaying={isPlaying}
                     onTogglePlayPause={handleTogglePlayPause}
+                    currentTime={currentTime}
+                    setCurrentTime={setCurrentTime}
+                    onShowPlaylists={() => setUiState('playlists')}
                     />
                     }
             </main>

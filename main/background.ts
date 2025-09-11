@@ -23,7 +23,7 @@ let mainWindow: Electron.BrowserWindow
     titleBarStyle: 'hidden',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
-      devTools: false,
+      devTools: true,
     },
   })
   
@@ -32,7 +32,7 @@ let mainWindow: Electron.BrowserWindow
   } else {
     const port = process.argv[2]
     await mainWindow.loadURL(`http://localhost:${port}/home`)
-    mainWindow.webContents.openDevTools()
+    //mainWindow.webContents.openDevTools()
   }
 })()
 
@@ -41,12 +41,13 @@ app.on('window-all-closed', () => {
 })
 
 app.on('ready', () => {
-globalShortcut.register('Control+Shift+I', () => {
-        // When the user presses Ctrl + Shift + I, this function will get called
-        // You can modify this function to do other things, but if you just want
-        // to disable the shortcut, you can just return false
-        return false;
-    });
+// globalShortcut.register('Control+Shift+I', () => {
+//         // When the user presses Ctrl + Shift + I, this function will get called
+//         // You can modify this function to do other things, but if you just want
+//         // to disable the shortcut, you can just return false
+//         return false;
+//     });
+  
 })
 
  ipcMain.on('close-window', () => {
