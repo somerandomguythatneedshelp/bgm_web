@@ -542,7 +542,9 @@ export default function HomePage() {
                     setUiState('home');
                     setVerifyError("");
                     setStatusMessage("");
-                } 
+                } else if (event.data === "bluetooth_play_pause_shit") {
+                    handleTogglePlayPause();
+                }
             }
         };
 
