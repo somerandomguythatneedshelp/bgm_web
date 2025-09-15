@@ -50,11 +50,11 @@ const styles: { [key: string]: CustomCssProperties } = {
     },
     titleBar: {
         height: '32px',
-        backgroundColor: '#101212',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         width: '100%',
+        userSelect: 'none',
     },
     draggableRegion: {
         WebkitAppRegion: 'drag',
@@ -71,6 +71,7 @@ const styles: { [key: string]: CustomCssProperties } = {
     windowControls: {
         display: 'flex',
         WebkitAppRegion: 'no-drag',
+        userSelect: 'none',
     },
     controlButton: {
         width: '46px',
@@ -83,6 +84,7 @@ const styles: { [key: string]: CustomCssProperties } = {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
+        userSelect: 'none',
     },
     closeButton: {}
 };
