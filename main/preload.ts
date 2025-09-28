@@ -21,6 +21,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   minimize: () => ipcRenderer.send('minimize-window'),
   maximize: () => ipcRenderer.send('maximize-window'),
   close: () => ipcRenderer.send('close-window'),
+
+  getRegistryValue: (keyPath) => ipcRenderer.invoke('get-registry-value', keyPath),
+  getTuneInstallPath: () => ipcRenderer.invoke('get-tune-install-path'),
+  launchApp: (filePath: string) => ipcRenderer.invoke('launch-application', filePath),
+  launchAppDetached: (appPath: string) => ipcRenderer.invoke('launch-app-detached', appPath),
+  isTuneServiceRunning: () => ipcRenderer.invoke('check-service-running'),
 });
 
 

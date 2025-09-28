@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import TitleBar from "./components/Titlebar";
 import { GlobalKeyboardListener } from 'node-global-key-listener';
 import { motion, AnimatePresence } from 'framer-motion';
+import { init } from 'next/dist/compiled/webpack/webpack';
 
 interface Track {
     songId: number;
@@ -30,7 +31,7 @@ interface LyricsPlayerProps {
   lyrics: LyricLine[]
   currentTime: number
   isPlaying?: boolean
-  songId?: string | number // Added songId to detect song changes
+  songId?: string | number 
 }
 
 const LyricsPlayer = ({ lyrics, currentTime, isPlaying = true, songId }: LyricsPlayerProps) => {
@@ -173,7 +174,6 @@ const LyricsPlayer = ({ lyrics, currentTime, isPlaying = true, songId }: LyricsP
   )
 }
 
-export { LyricsPlayer }
 
 const parseSRT = (srtText: string) => {
     if (!srtText) return [];
@@ -257,15 +257,7 @@ const MusicPlayerUI = ({
     lyrics: lyricsUrl = "",
   } = trackInfo || {}
 
-  useEffect(() => {
-    let interval
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setCurrentTime((prev) => (prev < song_length_sec ? prev + 0.1 : 0))
-      }, 100)
-    }
-    return () => clearInterval(interval)
-  }, [isPlaying, song_length_sec, setCurrentTime])
+
 
   const formatTime = (seconds) => {
     const totalSeconds = Math.floor(seconds)
@@ -435,7 +427,7 @@ const SearchBar = ({ onSearch }) => {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search for a song or artist..."
-          className="w-full p-5 pl-14 pr-16 rounded-2xl bg-black/20 backdrop-blur-md border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-300 hover:bg-black/25 focus:bg-black/30"
+          className="w-full p-5 pl-14 pr-16 rounded-2xl bg-black/20 backdrop-blur-md border border-white/20 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-300 hover:bg-black/25 focus:bg-black/30"
         />
         <div className="absolute left-5 top-1/2 -translate-y-1/2">
           <svg
@@ -559,6 +551,13 @@ const VerificationCodeForm = ({ onVerify, email, errorText }) => {
     );
 };
 
+interface PlaylistsUIProps {
+  playlists: Record<string, Track[]>;
+  currentTrack: Track | null;
+  sendMessage: (payload: string) => void;
+  onBack: () => void;
+  onGetPlaylistDetails: (playlistName: string) => void;
+}
 
 const PlaylistsUI = ({
   playlists = {},
@@ -760,7 +759,7 @@ const PlaylistsUI = ({
             value={newPlaylistName}
             onChange={(e) => setNewPlaylistName(e.target.value)}
             placeholder="New playlist name..."
-            className="flex-grow p-4 rounded-xl bg-black/20 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-300"
+            className="flex-grow p-4 rounded-xl bg-black/20 border border-white/20 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-300"
             onKeyPress={(e) => e.key === "Enter" && handleCreatePlaylist()}
           />
           <button
@@ -788,6 +787,8 @@ export default function HomePage() {
     const ws = useRef<WebSocket | null>(null);
     const [lyrics, setLyrics] = useState([]);
     const [verifyError, setVerifyError] = useState("");
+    const timerRef = useRef(null);
+    const syncInfoRef = useRef({ serverStartTime: 0, startPosition: 0 });
     const [playlists, setPlaylists] = useState<Record<string, Track[]>>({});
 
     const handleGetPlaylistDetails = (playlistName: string) => {
@@ -799,31 +800,155 @@ export default function HomePage() {
         setUiState('playlists');
     };
 
+
+async function waitForServiceReady(timeout = 60000, interval = 500) {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    const running = await (window as any).electronAPI.isTuneServiceRunning();
+    if (running) {
+      // try connecting to socket to confirm it's ready
+      try {
+        const socketTest = new WebSocket("ws://localhost:6767");
+        await new Promise((res, rej) => {
+          socketTest.onopen = () => { socketTest.close(); res(true); };
+          socketTest.onerror = () => { socketTest.close(); rej(false); };
+        });
+        return true; // ready
+      } catch { /* ignore, wait */ }
+    }
+    await new Promise(res => setTimeout(res, interval));
+  }
+  return false;
+}
+async function TryLaunchServer() {
+    setStatusMessage('Finding application...');
+
+    // 1. Get install path from registry via preload
+    const pathResult = await (window as any).electronAPI.getTuneInstallPath();
+    if (!pathResult.success || !pathResult.value) {
+        setStatusMessage(`Error: Could not find application path. ${pathResult.error}`);
+        return false;
+    }
+
+    const servicePath = `${pathResult.value}\\Tune_Service.exe`;
+    setStatusMessage(`Found at ${servicePath}. Checking if service is already running...`);
+
+    // 2. Launch service if not running
+    let isRunning = await (window as any).electronAPI.isTuneServiceRunning();
+    if (!isRunning) {
+        setStatusMessage('Service not running. Launching...');
+        const launchResult = await (window as any).electronAPI.launchAppDetached(servicePath);
+        if (!launchResult.success) {
+            setStatusMessage(`Error launching service: ${launchResult.error}`);
+            return false;
+        }
+    }
+
+    setStatusMessage('Waiting for service to accept connections...');
+
+    // 3. Poll the WebSocket every 2 seconds until it connects
+    const maxWaitTime = 120000; // 2 minutes max
+    const intervalMs = 2000; // 2 seconds
+    const startTime = Date.now();
+    let connected = false;
+
+    while (!connected && Date.now() - startTime < maxWaitTime) {
+        try {
+            await new Promise<void>((resolve, reject) => {
+                const testSocket = new WebSocket('ws://localhost:6767');
+                testSocket.onopen = () => {
+                    testSocket.close();
+                    resolve();
+                };
+                testSocket.onerror = () => {
+                    testSocket.close();
+                    reject();
+                };
+            });
+            connected = true;
+        } catch {
+            setStatusMessage('Service not ready yet, retrying...');
+            await new Promise(res => setTimeout(res, intervalMs));
+        }
+    }
+
+    if (!connected) {
+        setStatusMessage('Could not connect to the service in time.');
+        return false;
+    }
+
+    setStatusMessage('Service is ready!');
+    return true;
+}
+
+
     useEffect(() => {
-        const socket = new WebSocket("ws://localhost:6767");
+        const tick = () => {
+            const { serverStartTime, startPosition } = syncInfoRef.current;
+            if (serverStartTime > 0) {
+                const elapsed = (Date.now() - serverStartTime) / 1000;
+                setCurrentTime(startPosition + elapsed);
+            }
+        };
+
+        if (isPlaying) {
+            // Start a high-frequency timer for smooth UI updates
+            timerRef.current = setInterval(tick, 100);
+        } else {
+            // Clear the timer when paused
+            clearInterval(timerRef.current);
+        }
+
+        // Cleanup on component unmount
+        return () => clearInterval(timerRef.current);
+    }, [isPlaying]);
+
+    useEffect(() => {
+      let socket: WebSocket;
+
+    async function initConnection() {
+        const serviceReady = await TryLaunchServer();
+        if (!serviceReady) return;
+
+        socket = new WebSocket("ws://localhost:6767");
         ws.current = socket;
 
-        socket.onopen = () => console.log("Connected to C++ WebSocket");
+        socket.onopen = () => {
+            console.log("Connected to WebSocket server");
+            sendMessage("GiveMeCurrentSongDataNow");
+        };
+
         socket.onclose = () => console.log("Connection closed");
 
-        socket.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                if (data.type === "track_update") {
-                    // [Debug Checkpoint]
-                    console.log("[Debug] Received track_update data:", data);
-                    setLyrics([]); // Clear previous lyrics
-                    setTrackInfo(data);
-                    setCurrentTime(0);
+      socket.onmessage = (event) => {
+          try {
+              const data = JSON.parse(event.data);
+              if (data.type === "playback_position") {
+                console.log("[Debug] Received playback_position data:", data);
+                  setCurrentTime(data.position);
 
-                    try {
-        console.log("[Debug] Raw lyricsContent:", data.lyricsUrl);
+              }
+              if (data.type === "track_update") {
+                  // [Debug Checkpoint]
+                  console.log("[Debug] Received track_update data:", data);
+                  setLyrics([]); // Clear previous lyrics
+                  setTrackInfo(data);
+                  syncInfoRef.current = {
+                        serverStartTime: data.serverStartTime,
+                        startPosition: data.startPosition || 0
+                    };
+
+                    const elapsed = (Date.now() - data.serverStartTime) / 1000;
+                    setCurrentTime(data.startPosition + elapsed);
+                    setIsPlaying(true); // Start the timer effect
+
+                  try {
+       // console.log("[Debug] Raw lyricsContent:", data.lyricsUrl);
 
         const parsedLyrics = parseSRT(data.lyricsUrl);
         if (parsedLyrics && parsedLyrics.length > 0) {
     setLyrics(parsedLyrics);
-}
-
+        }      
     } catch (e) {
         console.error("[Debug] Failed to parse lyricsContent:", e, data.lyricsUrl);
         setLyrics([]);
@@ -831,9 +956,28 @@ export default function HomePage() {
 
                 } else if (data.type === "playback_status") {
                     setIsPlaying(data.isPlaying); 
+                    if (data.isPlaying) {
+                        // Resuming playback, re-sync the timer
+                        syncInfoRef.current = {
+                            serverStartTime: data.serverStartTime,
+                            startPosition: data.startPosition
+                        };
+                    } else {
+                        // Paused, set the time to the exact final position
+                        setCurrentTime(data.position);
+                    }
                 } else if (data.type === "playlists_update") {
                     setPlaylists(data.playlists || {});
-                }
+                } else if (data.type === "songupdatefromwhentheuserclosedfrontendapp") {
+                    // [Debug Checkpoint]
+                    console.log("[Debug] Received songupdatefromwhentheuserclosedfrontendapp data:", data);
+                    setLyrics([]); // Clear previous lyrics
+                    setTrackInfo(data);
+                    setCurrentTime(Number(data.current_position.position));
+                    setIsPlaying(data.isPlaying); 
+                    console.log("[Debug] Current position:", data.current_position.position);
+}
+            
             } catch (e) {
                 if (event.data === "emailconfirmation") {
                     setUiState('verify'); 
@@ -853,8 +997,13 @@ export default function HomePage() {
                 }
             }
         };
+      }
 
-        return () => socket.close();
+      initConnection();
+
+        return () => {
+        if (socket) socket.close();
+    };
     }, []);
 
     const handleSearchSubmit = (query: string) => {
