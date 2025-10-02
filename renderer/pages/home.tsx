@@ -257,8 +257,6 @@ const MusicPlayerUI = ({
     lyrics: lyricsUrl = "",
   } = trackInfo || {}
 
-
-
   const formatTime = (seconds) => {
     const totalSeconds = Math.floor(seconds)
     const mins = Math.floor(totalSeconds / 60)
@@ -300,8 +298,8 @@ const MusicPlayerUI = ({
                   <span className="text-sm text-white/80 w-12 text-center font-mono">{formatTime(currentTime)}</span>
                   <div className="flex-1 bg-white/10 rounded-full h-2 group cursor-pointer hover:h-2.5 transition-all duration-200">
                     <div
-                      className="bg-gradient-to-r from-purple-400 to-purple-600 h-full rounded-full transition-all duration-300 shadow-lg shadow-purple-500/30"
-                      style={{ width: `${(currentTime / song_length_sec) * 100}%` }}
+                      className="bg-gradient-to-r text-gray-500 h-full rounded-full transition-all duration-300 shadow-lg shadow-purple-500/30"
+                      style={{ width: `${(currentTime / song_length_sec) * 100}%`, backgroundColor: "white" }}
                     />
                   </div>
                   <span className="text-sm text-white/80 w-12 text-center font-mono">
@@ -410,6 +408,7 @@ const MusicPlayerUI = ({
 
 const SearchBar = ({ onSearch }) => {
   const [query, setQuery] = useState("")
+  const [isFocused, setIsFocused] = useState(false)
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -422,36 +421,68 @@ const SearchBar = ({ onSearch }) => {
   return (
     <form onSubmit={handleSubmit} className="mt-8">
       <div className="relative group">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search for a song or artist..."
-          className="w-full p-5 pl-14 pr-16 rounded-2xl bg-black/20 backdrop-blur-md border border-white/20 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-300 hover:bg-black/25 focus:bg-black/30"
-        />
-        <div className="absolute left-5 top-1/2 -translate-y-1/2">
+        <motion.div
+          animate={{
+            scale: isFocused ? 1.01 : 1,
+          }}
+          transition={{ duration: 0.2 }}
+          className="relative"
+        >
+          {isFocused && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="absolute -inset-1 bg-gradient-to-r from-primary/30 via-accent/30 to-primary/30 rounded-2xl blur-xl"
+            />
+          )}
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            placeholder="Search for a song or artist..."
+            className="relative w-full p-6 pl-16 pr-20 rounded-2xl bg-card/50 backdrop-blur-md border border-border/60 text-gray-900 placeholder-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/60 focus:border-primary/60 focus:bg-card/70 transition-all duration-300 hover:bg-card/60 hover:border-border/80 shadow-lg"
+          />
+        </motion.div>
+        <div className="absolute left-6 top-1/2 -translate-y-1/2">
           <svg
-            className="w-6 h-6 text-gray-400 group-focus-within:text-purple-400 transition-colors duration-300"
+            className={`w-6 h-6 transition-all duration-300 ${isFocused ? "text-primary scale-110" : "text-muted-foreground"}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
+            strokeWidth={2.5}
+            color='#252525'
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
-        <button
+        <motion.button
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.92 }}
           type="submit"
-          className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-purple-500/40"
+          className="absolute right-4 top-1/4 -translate-y-1/2 p-3 rounded-xl transition-all duration-300 overflow-hidden group"
+          style={{
+            background: "linear-gradient(135deg, rgba(226, 219, 241, 1) 0%, rgba(55, 54, 56, 1) 100%)",
+            boxShadow: "0 4px 20px rgba(87, 82, 97, 0.4)",
+          }}
         >
-          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          <div
+            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            style={{
+              background: "linear-gradient(135deg, rgba(200, 193, 211, 1) 0%, rgba(72, 69, 77, 1) 100%)",
+            }}
+          />
+          <svg
+            className="relative w-5 h-5 text-primary-foreground z-10"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            strokeWidth={2.5}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
           </svg>
-        </button>
+        </motion.button>
       </div>
     </form>
   )
@@ -801,25 +832,6 @@ export default function HomePage() {
     };
 
 
-async function waitForServiceReady(timeout = 60000, interval = 500) {
-  const start = Date.now();
-  while (Date.now() - start < timeout) {
-    const running = await (window as any).electronAPI.isTuneServiceRunning();
-    if (running) {
-      // try connecting to socket to confirm it's ready
-      try {
-        const socketTest = new WebSocket("ws://localhost:6767");
-        await new Promise((res, rej) => {
-          socketTest.onopen = () => { socketTest.close(); res(true); };
-          socketTest.onerror = () => { socketTest.close(); rej(false); };
-        });
-        return true; // ready
-      } catch { /* ignore, wait */ }
-    }
-    await new Promise(res => setTimeout(res, interval));
-  }
-  return false;
-}
 async function TryLaunchServer() {
     setStatusMessage('Finding application...');
 
@@ -846,9 +858,8 @@ async function TryLaunchServer() {
 
     setStatusMessage('Waiting for service to accept connections...');
 
-    // 3. Poll the WebSocket every 2 seconds until it connects
-    const maxWaitTime = 120000; // 2 minutes max
-    const intervalMs = 2000; // 2 seconds
+    const maxWaitTime = 30000; // 30 seconds max
+    const intervalMs = 1000; // 1 seconds
     const startTime = Date.now();
     let connected = false;
 
@@ -940,14 +951,20 @@ async function TryLaunchServer() {
 
                     const elapsed = (Date.now() - data.serverStartTime) / 1000;
                     setCurrentTime(data.startPosition + elapsed);
-                    setIsPlaying(true); // Start the timer effect
+                    setIsPlaying(data.isPlaying);
+
+                    setTimeout(() => {
+                     
+                        handleTogglePlayPause();
+                        handleTogglePlayPause();
+                    }, 670); 
 
                   try {
-       // console.log("[Debug] Raw lyricsContent:", data.lyricsUrl);
-
-        const parsedLyrics = parseSRT(data.lyricsUrl);
+        if (data.lyricsUrl != "") {
+          const parsedLyrics = parseSRT(data.lyricsUrl);
         if (parsedLyrics && parsedLyrics.length > 0) {
     setLyrics(parsedLyrics);
+        }
         }      
     } catch (e) {
         console.error("[Debug] Failed to parse lyricsContent:", e, data.lyricsUrl);
@@ -975,7 +992,19 @@ async function TryLaunchServer() {
                     setTrackInfo(data);
                     setCurrentTime(Number(data.current_position.position));
                     setIsPlaying(data.isPlaying); 
+                    setTimeout(() => {
+                     
+                        handleTogglePlayPause();
+                        handleTogglePlayPause();
+                      
+                    }, 50);
                     console.log("[Debug] Current position:", data.current_position.position);
+                     if (data.lyricsUrl != "") {
+          const parsedLyrics = parseSRT(data.lyricsUrl);
+        if (parsedLyrics && parsedLyrics.length > 0) {
+    setLyrics(parsedLyrics);
+        }
+      }
 }
             
             } catch (e) {
