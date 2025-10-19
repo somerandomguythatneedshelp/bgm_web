@@ -2,12 +2,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import TitleBar from "./components/Titlebar";
-import { GlobalKeyboardListener } from 'node-global-key-listener';
 import { motion, AnimatePresence } from 'framer-motion';
 import { init } from 'next/dist/compiled/webpack/webpack';
 
 interface Track {
-    songId: number;
+    song_id: number;
     song_name: string;
     artist_name: string;
     album: string;
@@ -31,15 +30,15 @@ interface LyricsPlayerProps {
   lyrics: LyricLine[]
   currentTime: number
   isPlaying?: boolean
-  songId?: string | number 
+  song_id?: string | number 
 }
 
-const LyricsPlayer = ({ lyrics, currentTime, isPlaying = true, songId }: LyricsPlayerProps) => {
+const LyricsPlayer = ({ lyrics, currentTime, isPlaying = true, song_id }: LyricsPlayerProps) => {
   const [activeLineIndex, setActiveLineIndex] = useState(-1)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [displayLyrics, setDisplayLyrics] = useState(lyrics)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const prevSongIdRef = useRef(songId)
+  const prevsong_idRef = useRef(song_id)
 
   const customScrollbarStyles = `
     .scrollbar-custom::-webkit-scrollbar { width: 6px; }
@@ -55,7 +54,7 @@ const LyricsPlayer = ({ lyrics, currentTime, isPlaying = true, songId }: LyricsP
   `
 
   useEffect(() => {
-    if (prevSongIdRef.current !== songId && prevSongIdRef.current !== undefined) {
+    if (prevsong_idRef.current !== song_id && prevsong_idRef.current !== undefined) {
       // Song changed - start transition
       setIsTransitioning(true)
 
@@ -74,8 +73,8 @@ const LyricsPlayer = ({ lyrics, currentTime, isPlaying = true, songId }: LyricsP
       setDisplayLyrics(lyrics)
     }
 
-    prevSongIdRef.current = songId
-  }, [lyrics, songId])
+    prevsong_idRef.current = song_id
+  }, [lyrics, song_id])
 
   useEffect(() => {
     if (!displayLyrics || displayLyrics.length === 0 || isTransitioning) return
@@ -91,7 +90,7 @@ const LyricsPlayer = ({ lyrics, currentTime, isPlaying = true, songId }: LyricsP
     if (newIndex !== activeLineIndex) setActiveLineIndex(newIndex)
   }, [currentTime, displayLyrics, activeLineIndex, isTransitioning])
 
-  useEffect(() => {
+   useEffect(() => {
     if (activeLineIndex === -1 || !scrollContainerRef.current || isTransitioning) return
 
     const activeLineElement = scrollContainerRef.current.children[activeLineIndex] as HTMLElement
@@ -123,7 +122,7 @@ const LyricsPlayer = ({ lyrics, currentTime, isPlaying = true, songId }: LyricsP
               d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
             />
           </svg>
-          <p className="text-lg">No lyrics available</p>
+          <p className="text-lg select-none">No lyrics available</p>
         </div>
       </div>
     )
@@ -134,7 +133,7 @@ const LyricsPlayer = ({ lyrics, currentTime, isPlaying = true, songId }: LyricsP
       <style>{customScrollbarStyles}</style>
       <div
         ref={scrollContainerRef}
-        className={`h-full overflow-y-auto text-center px-6 py-8 scrollbar-custom transition-all duration-500 ease-out ${
+        className={`h-full overflow-y-auto px-6 py-8 scrollbar-custom transition-all duration-500 ease-out ${
           isTransitioning ? "opacity-0 scale-95" : "opacity-100 scale-100"
         } ${!isPlaying ? "opacity-60" : ""}`}
       >
@@ -145,22 +144,19 @@ const LyricsPlayer = ({ lyrics, currentTime, isPlaying = true, songId }: LyricsP
 
           return (
             <p
-              key={`${songId}-${index}`}
-              className={`transition-all duration-700 ease-out text-xl md:text-2xl py-3 px-2 font-medium leading-relaxed transform ${
+              key={`${song_id}-${index}`}
+              className={`select-none transition-all duration-700 ease-out text-xl md:text-3xl py-3 px-4 font-medium leading-relaxed transform ${
                 isActive ? "text-white scale-105 opacity-100 translate-y-0" : "scale-100 translate-y-0"
               } ${
                 isPast
-                  ? "text-gray-500 opacity-60"
+                  ? "text-gray-500 opacity-55"
                   : isUpcoming
-                    ? "text-gray-400 opacity-40"
+                    ? "text-gray-400 opacity-60"
                     : "text-gray-400 opacity-70"
               }`}
               style={{
-                filter: isActive ? "blur(0px)" : "blur(0.3px)",
+                filter: isActive ? "blur(0px)" : "blur(0.9px)",
                 textShadow: isActive ? "0 0 30px rgba(33, 31, 36, 0.4), 0 0 60px rgba(54, 51, 51, 0.2)" : "none",
-                background: isActive
-                  ? "linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(61, 54, 68, 0.05))"
-                  : "transparent",
                 borderRadius: isActive ? "12px" : "0px",
               }}
             >
@@ -173,7 +169,6 @@ const LyricsPlayer = ({ lyrics, currentTime, isPlaying = true, songId }: LyricsP
     </>
   )
 }
-
 
 const parseSRT = (srtText: string) => {
     if (!srtText) return [];
@@ -253,7 +248,7 @@ const MusicPlayerUI = ({
     album = "...",
     coverArtUrl = "",
     song_length_sec = 0,
-    songId = 0, // Added songId to match JSON
+    song_id = 0, // Added song_id to match JSON
     lyrics: lyricsUrl = "",
   } = trackInfo || {}
 
@@ -270,25 +265,25 @@ const MusicPlayerUI = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className="w-full flex flex-col items-center"
+      className="w-full flex flex-col items-center select-none"
     >
       <div className="w-full max-w-7xl flex items-center justify-center gap-8 relative h-[26rem]">
         <div
           className={`transition-all duration-700 ease-out ${showLyrics ? "md:-translate-x-1/2" : "md:translate-x-0"}`}
         >
-          <div className="w-full max-w-2xl bg-black/20 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl flex flex-col md:flex-row p-8 gap-8 items-center hover:bg-black/25 transition-all duration-500">
+          <div className="w-full max-w-2xl bg-black/20 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl flex flex-col md:flex-row p-8 gap-6 items-center hover:bg-black/25 transition-all duration-500">
             <div className="relative group">
               <img
-                src={coverArtUrl || "/placeholder.svg"}
+                src={coverArtUrl || ""}
                 alt="Current Track"
-                className="w-52 h-52 md:w-60 md:h-60 object-cover rounded-2xl shadow-2xl flex-shrink-0 transition-all duration-500 group-hover:scale-[1.02] group-hover:shadow-purple-500/20"
+                className="w-52 h-52 md:w-60 md:h-60 object-cover rounded-2xl shadow-2xl flex-shrink-0 transition-all duration-700 group-hover:scale-[1.02] group-hover:shadow-purple-500/20"
               />
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
 
             <div className="flex flex-col flex-1 justify-center w-full h-full space-y-6">
               <div className="text-center md:text-left space-y-2">
-                <h2 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg leading-tight">{song_name}</h2>
+                <h2 className="text-2xl md:text-3xl font-bold text-white drop-shadow-lg leading-tight">{song_name}</h2>
                 <p className="text-lg md:text-xl text-gray-200 drop-shadow-md font-medium">{artist_name}</p>
                 <p className="text-base text-gray-300 drop-shadow-md">{album}</p>
               </div>
@@ -299,7 +294,7 @@ const MusicPlayerUI = ({
                   <div className="flex-1 bg-white/10 rounded-full h-2 group cursor-pointer hover:h-2.5 transition-all duration-200">
                     <div
                       className="bg-gradient-to-r text-gray-500 h-full rounded-full transition-all duration-300 shadow-lg shadow-purple-500/30"
-                      style={{ width: `${(currentTime / song_length_sec) * 100}%`, backgroundColor: "white" }}
+                      style={{ width: `${(currentTime / song_length_sec) * 100}%`, backgroundColor: "white", maxWidth: "100%" }}
                     />
                   </div>
                   <span className="text-sm text-white/80 w-12 text-center font-mono">
@@ -370,7 +365,7 @@ const MusicPlayerUI = ({
         <div
           className={`absolute right-0 transition-all duration-700 ease-out w-full md:w-1/2 flex-shrink-0 ${showLyrics ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4 -z-10"}`}
         >
-          <div className="h-[24rem] bg-black/20 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
+          <div className="h-[24rem] overflow-hidden">
             <LyricsPlayer lyrics={lyrics} currentTime={currentTime} />
           </div>
         </div>
@@ -407,86 +402,40 @@ const MusicPlayerUI = ({
 }
 
 const SearchBar = ({ onSearch }) => {
-  const [query, setQuery] = useState("")
-  const [isFocused, setIsFocused] = useState(false)
+    const [query, setQuery] = useState("");
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    if (query.trim()) {
-      onSearch(query.trim())
-      setQuery("")
-    }
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (query.trim()) {
+            onSearch(query.trim());
+            setQuery("");
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="mt-6">
+            <div className="relative">
+                <input
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search for a song or artist..."
+                    className="w-full p-4 pl-12 rounded-xl bg-black/30 backdrop-blur-md border border-white/20 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300"
+                />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+                <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-900 rounded-lg bg-purple-600 hover:bg-purple-700 transition-colors">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                </button>
+            </div>
+        </form>
+    );
   }
-
-  return (
-    <form onSubmit={handleSubmit} className="mt-8">
-      <div className="relative group">
-        <motion.div
-          animate={{
-            scale: isFocused ? 1.01 : 1,
-          }}
-          transition={{ duration: 0.2 }}
-          className="relative"
-        >
-          {isFocused && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="absolute -inset-1 bg-gradient-to-r from-primary/30 via-accent/30 to-primary/30 rounded-2xl blur-xl"
-            />
-          )}
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            placeholder="Search for a song or artist..."
-            className="relative w-full p-6 pl-16 pr-20 rounded-2xl bg-card/50 backdrop-blur-md border border-border/60 text-gray-900 placeholder-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/60 focus:border-primary/60 focus:bg-card/70 transition-all duration-300 hover:bg-card/60 hover:border-border/80 shadow-lg"
-          />
-        </motion.div>
-        <div className="absolute left-6 top-1/2 -translate-y-1/2">
-          <svg
-            className={`w-6 h-6 transition-all duration-300 ${isFocused ? "text-primary scale-110" : "text-muted-foreground"}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            strokeWidth={2.5}
-            color='#252525'
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </div>
-        <motion.button
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.92 }}
-          type="submit"
-          className="absolute right-4 top-1/4 -translate-y-1/2 p-3 rounded-xl transition-all duration-300 overflow-hidden group"
-          style={{
-            background: "linear-gradient(135deg, rgba(226, 219, 241, 1) 0%, rgba(55, 54, 56, 1) 100%)",
-            boxShadow: "0 4px 20px rgba(87, 82, 97, 0.4)",
-          }}
-        >
-          <div
-            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-            style={{
-              background: "linear-gradient(135deg, rgba(200, 193, 211, 1) 0%, rgba(72, 69, 77, 1) 100%)",
-            }}
-          />
-          <svg
-            className="relative w-5 h-5 text-primary-foreground z-10"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            strokeWidth={2.5}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-          </svg>
-        </motion.button>
-      </div>
-    </form>
-  )
-}
 
 const PasswordStrengthIndicator = ({ password }) => {
     const checks = {
@@ -507,9 +456,6 @@ const PasswordStrengthIndicator = ({ password }) => {
         <ul className="space-y-1 text-left mt-4 p-4 bg-[#2a2a2a] rounded-md">
             <Requirement label="Minimum 8 characters" met={checks.length} />
             <Requirement label="Contains at least 1 number" met={checks.number} />
-            <Requirement label="Contains at least 1 special character" met={checks.specialChar} />
-            <Requirement label="Contains at least 1 uppercase letter" met={checks.uppercase} />
-            <Requirement label="Contains at least 1 lowercase letter" met={checks.lowercase} />
         </ul>
     );
 };
@@ -614,12 +560,16 @@ const PlaylistsUI = ({
     } else {
       console.error("Cannot add to playlist: Invalid songId.", currentTrack)
     }
+
     setShowAddSong(false)
   }
 
-  const handleRemoveTrack = (playlistName: string, songId: number) => {
-    sendMessage(`RemoveSongFromPlaylist: ${playlistName}|${songId}`)
+const handleRemoveTrack = (playlistName: string, song_idToRemove: number) => {
+  console.log(`RemoveSongFromPlaylist: ${playlistName}|${song_idToRemove}`)
+  if (typeof song_idToRemove === "number") {
+    sendMessage(`RemoveSongFromPlaylist: ${playlistName}|${song_idToRemove}`)
   }
+}
 
   const handlePlayPlaylist = (name: string) => {
     sendMessage(`PlayPlaylist: ${name}`)
@@ -750,20 +700,21 @@ const PlaylistsUI = ({
               <ul className="space-y-2">
                 {(tracks || []).map((track, index) => (
                   <li
-                    key={`${track.songId}-${index}`}
+                    key={`${track.song_id}-${index}`}
                     className="group flex items-center justify-between p-3 rounded-xl hover:bg-white/10 transition-all duration-300"
                   >
+                    
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400 text-sm font-medium">
                         {index + 1}
                       </div>
                       <div>
                         <span className="text-white font-medium">{track.song_name}</span>
-                        <span className="text-gray-400 ml-2">by {track.artist_name}</span>
+                        <span className="text-gray-400 ml-2">{track.artist_name}</span>
                       </div>
                     </div>
                     <button
-                      onClick={() => handleRemoveTrack(name, track.songId)}
+                      onClick={() => handleRemoveTrack(name, track.song_id)}
                       className="opacity-0 group-hover:opacity-100 p-2 rounded-full hover:bg-red-500/20 text-gray-500 hover:text-red-400 transition-all duration-300"
                       title="Remove song"
                     >
@@ -1055,9 +1006,6 @@ async function TryLaunchServer() {
         const checks = {
             length: password.length >= 8,
             number: /\d/.test(password),
-            specialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password),
-            uppercase: /[A-Z]/.test(password),
-            lowercase: /[a-z]/.test(password),
         };
         return Object.values(checks).every(Boolean);
     };
@@ -1127,9 +1075,9 @@ async function TryLaunchServer() {
         <div className="relative h-screen overflow-hidden font-sans text-white transition-all duration-1000">
             <div 
                 style={backgroundStyle} 
-                className="absolute inset-0 z-0 bg-cover bg-center filter blur-2xl scale-110 transition-all duration-1000" 
+                className="absolute inset-0 z-0 bg-cover bg-center filter blur-2xl scale-100 transition-all duration-1000" 
             />
-            <div className="absolute inset-0 z-10 bg-black/50" />
+            <div className="absolute inset-0 z-10 bg-gradient-to-tr from-black/60 via-black/40 to-black/60 backdrop-brightness-75" />
             <div className="relative z-20 flex h-screen flex-col items-center justify-center p-4">
                 <TitleBar />
                 <main className="w-full flex flex-col items-center justify-center">
