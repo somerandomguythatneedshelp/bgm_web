@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   launchApp: (filePath: string) => ipcRenderer.invoke('launch-application', filePath),
   launchAppDetached: (appPath: string) => ipcRenderer.invoke('launch-app-detached', appPath),
   isTuneServiceRunning: () => ipcRenderer.invoke('check-service-running'),
+  restartApp: () => ipcRenderer.send("app-restart"),
 });
 
 

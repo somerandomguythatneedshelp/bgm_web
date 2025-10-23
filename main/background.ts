@@ -191,6 +191,12 @@ app.on('ready', () => {
     }
   });
 
-ipcMain.on('message', async (event, arg) => {
-  event.reply('message', `${arg} World!`)
-})
+ipcMain.on("app-restart", () => {
+  console.log("Restarting app due to WebSocket failure...");
+
+  // Optional: small delay to ensure clean exit
+  setTimeout(() => {
+    app.relaunch();
+    app.exit(0);
+  }, 500);
+});

@@ -178,19 +178,31 @@ const parseSRT = (srtText: string) => {
     let i = 0;
 
     while (i < lines.length) {
-        const indexLine = lines[i].trim();
-        const timeLine = lines[i + 1]?.trim();
-        const textLine = lines[i + 2]?.trim();
-
-        if (!indexLine || !timeLine || !textLine) {
+        // Skip empty lines
+        if (!lines[i]?.trim()) {
             i++;
             continue;
         }
 
-        // Parse time
-        const timeMatch = timeLine.match(/(\d+):(\d+):(\d+),(\d+)\s-->\s(\d+):(\d+):(\d+),(\d+)/);
+        // 1. Find Index Line (we can skip it if it's just a number)
+        const indexLine = lines[i];
+        if (!/^\d+$/.test(indexLine.trim())) {
+            i++; // Not a valid block, skip
+            continue;
+        }
+        i++;
+
+        // 2. Find Time Line
+        const timeLine = lines[i]?.trim();
+        if (!timeLine || timeLine.indexOf('-->') === -1) {
+            i++; // Not a valid time line, skip
+            continue;
+        }
+        i++;
+        
+        const timeMatch = timeLine.match(/(\d+):(\d+):(\d+),(\d+)/); // Find start time
         if (!timeMatch) {
-            i += 3;
+            i++; // Invalid time format
             continue;
         }
 
@@ -200,12 +212,19 @@ const parseSRT = (srtText: string) => {
             parseInt(timeMatch[3]) +
             parseInt(timeMatch[4]) / 1000;
 
-        result.push({
-            time: startTimeSec,
-            text: textLine
-        });
+        // 3. Read Text Lines (one or more)
+        let textLines: string[] = [];
+        while (lines[i] && lines[i].trim() !== "") {
+            textLines.push(lines[i].trim());
+            i++;
+        }
 
-        i += 4; // move to next block (usually 4 lines per SRT block)
+        if (textLines.length > 0) {
+            result.push({
+                time: startTimeSec,
+                text: textLines.join('\n') // Join multi-lines with a newline
+            });
+        }
     }
 
     return result;
@@ -234,9 +253,10 @@ const MusicPlayerUI = ({
   isPlaying,
   onTogglePlayPause,
   currentTime,
-  setCurrentTime,
   onShowPlaylists,
   lyrics,
+  onNextTrack,
+  onPrevTrack
 }) => {
   const [showLyrics, setShowLyrics] = useState(false)
   const [isLiked, setIsLiked] = useState(false)
@@ -322,7 +342,9 @@ const MusicPlayerUI = ({
                   </button>
 
                   <div className="flex items-center gap-6">
-                    <button className="p-3 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-300 hover:scale-110">
+                    <button 
+                    onClick={onPrevTrack}
+                    className="p-3 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-300 hover:scale-110">
                       <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
                       </svg>
@@ -337,7 +359,9 @@ const MusicPlayerUI = ({
                       </svg>
                     </button>
 
-                    <button className="p-3 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-300 hover:scale-110">
+                    <button 
+                    onClick={onNextTrack}
+                    className="p-3 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-300 hover:scale-110">
                       <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
                       </svg>
@@ -809,7 +833,7 @@ async function TryLaunchServer() {
 
     setStatusMessage('Waiting for service to accept connections...');
 
-    const maxWaitTime = 30000; // 30 seconds max
+    const maxWaitTime = 10000; // 30 seconds max
     const intervalMs = 1000; // 1 seconds
     const startTime = Date.now();
     let connected = false;
@@ -824,8 +848,11 @@ async function TryLaunchServer() {
                 };
                 testSocket.onerror = () => {
                     testSocket.close();
+                    (window as any).electronAPI.restartApp();
                     reject();
                 };
+                
+              
             });
             connected = true;
         } catch {
@@ -842,6 +869,16 @@ async function TryLaunchServer() {
     setStatusMessage('Service is ready!');
     return true;
 }
+
+    function onNextTrack() {
+      console.log("[Debug] Next track button clicked");
+      sendMessage("next_track");
+    }
+
+    function onPrevTrack() {
+      console.log("[Debug] Previous track button clicked");
+      sendMessage("prev_track");
+    }
 
 
     useEffect(() => {
@@ -890,11 +927,19 @@ async function TryLaunchServer() {
                   setCurrentTime(data.position);
 
               }
+              if (data.type === "lyics_update") {
+                console.log("[Debug] Received lyics_update data:", data);
+                const parsedLyrics = parseSRT(data.lyricsUrl);
+                if (parsedLyrics && parsedLyrics.length > 0) {
+            setLyrics(parsedLyrics);  
+                }
+
+              }
               if (data.type === "track_update") {
                   // [Debug Checkpoint]
                   console.log("[Debug] Received track_update data:", data);
-                  setLyrics([]); // Clear previous lyrics
                   setTrackInfo(data);
+                  setLyrics([]); // Clear previous lyrics
                   syncInfoRef.current = {
                         serverStartTime: data.serverStartTime,
                         startPosition: data.startPosition || 0
@@ -902,25 +947,13 @@ async function TryLaunchServer() {
 
                     const elapsed = (Date.now() - data.serverStartTime) / 1000;
                     setCurrentTime(data.startPosition + elapsed);
-                    setIsPlaying(data.isPlaying);
+                    setIsPlaying(true);
 
                     setTimeout(() => {
                      
                         handleTogglePlayPause();
                         handleTogglePlayPause();
                     }, 670); 
-
-                  try {
-        if (data.lyricsUrl != "") {
-          const parsedLyrics = parseSRT(data.lyricsUrl);
-        if (parsedLyrics && parsedLyrics.length > 0) {
-    setLyrics(parsedLyrics);
-        }
-        }      
-    } catch (e) {
-        console.error("[Debug] Failed to parse lyricsContent:", e, data.lyricsUrl);
-        setLyrics([]);
-    }
 
                 } else if (data.type === "playback_status") {
                     setIsPlaying(data.isPlaying); 
@@ -1103,9 +1136,10 @@ async function TryLaunchServer() {
                                 isPlaying={isPlaying}
                                 onTogglePlayPause={handleTogglePlayPause}
                                 currentTime={currentTime}
-                                setCurrentTime={setCurrentTime}
                                 onShowPlaylists={handleShowPlaylists}
                                 lyrics={lyrics}
+                                onNextTrack={onNextTrack}
+                                onPrevTrack={onPrevTrack}
                                 />
                                 }
                     </AnimatePresence>
