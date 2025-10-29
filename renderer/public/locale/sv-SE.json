@@ -1,0 +1,51 @@
+{
+  "verification": {
+    "checkemail": "Kontrollera din e-post för en verifieringslänk.",
+    "emailsent": "Vi har skickat ett verifieringsmejl till ",
+    "expiry": "Koden går snart ut, så ange den så snart som möjligt.",
+    "verify": "Verifiera"
+  },
+  "auth": {
+    "detailsbelow": "Fyll i uppgifterna nedan",
+    "welcome": "Välkommen tillbaka! Logga in.",
+    "createaccount": "Skapa ett konto",
+    "signin": "Logga in",
+    "enteremail": "Ange din e-postadress",
+    "enterpassword": "Ange ditt lösenord",
+    "enterusername": "Ange ditt användarnamn",
+    "signinwithaccount": "Har du redan ett konto? Logga in",
+    "signupwithaccount": "Har du inget konto? Registrera dig",
+    "create": "Skapa",
+    "continue": "Fortsätt"
+  },
+  "playlists": {
+    "title": "Dina spellistor",
+    "addsong": "Lägg till '{song_name}' till spellistan",
+    "nopl_title": "Du har inte skapat några spellistor ännu.",
+    "nopl_subtitle": "Skapa din första spellista nedan",
+    "play": "Spela upp spellista",
+    "delete": "Ta bort spellista",
+    "remove": "Ta bort låt",
+    "new_placeholder": "Nytt namn på spellista...",
+    "create": "Skapa"
+  },
+  "home_player": {
+    "alt_cover": "Aktuell spår",
+    "pl_title": "Dina spellistor",
+    "pl_subtitle": "Visa och hantera dina spellistor",
+    "recent_title": "Senast spelade",
+    "recent_subtitle": "Hoppa tillbaka in",
+    "discover_title": "Upptäck",
+    "discover_subtitle": "Nya utgåvor",
+    "search_placeholder": "Sök efter en låt eller artist..."
+  },
+    "settings": {
+    "title": "Inställningar",
+    "language": "Språk",
+    "save": "Spara ändringar",
+    "enable_auto_play": "Aktivera autospelning",
+    "auto_play_description": "Spela automatiskt en liknande låt när den aktuella slutar.",
+    "profile": "Profil",
+    "logout": "Logga ut"
+  }
+}

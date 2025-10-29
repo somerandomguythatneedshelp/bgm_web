@@ -1,0 +1,51 @@
+{
+  "verification": {
+    "checkemail": "Check your email for a verification link.",
+    "emailsent": "We've sent a verification email to ",
+    "expiry": "The code expires shortly, so please enter it soon.",
+    "verify": "Verify"
+  },
+  "auth": {
+    "detailsbelow": "Fill in the details below",
+    "welcome": "Welcome back! Please sign in.",
+    "createaccount": "Create an account",
+    "signin": "Sign in",
+    "enteremail": "Enter your email",
+    "enterpassword": "Enter your password",
+    "enterusername": "Enter your username",
+    "signinwithaccount": "Already have an account? Sign in",
+    "signupwithaccount": "Don't have an account? Sign up",
+    "create": "Create",
+    "continue": "Continue"
+  },
+  "playlists": {
+    "title": "Your Playlists",
+    "addsong": "Add '{song_name}' to Playlist",
+    "nopl_title": "You haven't created any playlists yet",
+    "nopl_subtitle": "Create your first playlist below",
+    "play": "Play Playlist",
+    "delete": "Delete Playlist",
+    "remove": "Remove song",
+    "new_placeholder": "New playlist name...",
+    "create": "Create"
+  },
+  "home_player": {
+    "alt_cover": "Current Track",
+    "pl_title": "Your Playlists",
+    "pl_subtitle": "View and manage your playlists",
+    "recent_title": "Recently Played",
+    "recent_subtitle": "Jump back in",
+    "discover_title": "Discover",
+    "discover_subtitle": "New releases",
+    "search_placeholder": "Search for a song or artist..."
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "save": "Save Changes",
+    "enable_auto_play": "Enable Auto-Play",
+    "auto_play_description": "Automatically play a similar song when the current one ends.",
+    "profile": "Profile",
+    "logout": "Log Out"
+  }
+}

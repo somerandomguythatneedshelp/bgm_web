@@ -2,8 +2,10 @@ import path from 'path'
 import { app, ipcMain, globalShortcut } from 'electron'
 import serve from 'electron-serve'
 import { createWindow } from './helpers'
+import * as fs from "fs";
 import WinReg from 'winreg';
 import { execFile, spawn } from 'child_process';
+import { a } from 'framer-motion/dist/types.d-BJcRxCew';
 const isProd = process.env.NODE_ENV === 'production'
 
 if (isProd) {
@@ -22,6 +24,7 @@ let mainWindow: Electron.BrowserWindow
     height: 600,
     frame: false,
     titleBarStyle: 'hidden',
+    icon: '/images/icon.png',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       devTools: true,
@@ -86,6 +89,65 @@ ipcMain.handle('get-registry-value', async (event, keyPath) => {
 
     return { success: true, value: productName };
   } catch (error) {
+    console.error(error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('read-lang', async() => {
+   try {
+    const regKey = new WinReg({
+      hive: WinReg.HKCU, // CHANGED: Use HKEY_CURRENT_USER
+      key:  '\\Software\\Tune\\tune', // CHANGED: The specific key path
+    });
+
+    const locale = await new Promise((resolve, reject) => {
+      // CHANGED: Get the 'InstallPath' value
+      regKey.get('locale', (err, item) => {
+        if (err) {
+          // This error often means the key or value doesn't exist
+          return reject(new Error('Could not find locale. Is the software installed?'));
+        }
+        resolve(item.value);
+      });
+    });
+    return { success: true, value: locale };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: error.message };
+  }
+})
+
+ipcMain.handle('write-lang', async (event, newLocale) => {
+  // 1. Basic validation
+  if (!newLocale || typeof newLocale !== 'string') {
+    return { success: false, error: 'Invalid locale provided. Must be a non-empty string.' };
+  }
+
+  try {
+    const regKey = new WinReg({
+      hive: WinReg.HKCU,
+      key: '\\Software\\Tune\\tune',
+    });
+
+    // 2. Use a Promise to wrap the 'set' callback
+    await new Promise((resolve, reject) => {
+      // Use regKey.set(name, type, value, callback)
+      regKey.set('locale', WinReg.REG_SZ, newLocale, (err) => {
+        if (err) {
+          // This could fail due to permissions or if the key doesn't exist
+          return reject(new Error(`Failed to write locale: ${err.message}`));
+        }
+        // Success
+        resolve();
+      });
+    });
+
+    // 3. Return a success object
+    return { success: true, value: newLocale };
+
+  } catch (error) {
+    // 4. Catch any errors from the promise or instantiation
     console.error(error);
     return { success: false, error: error.message };
   }
@@ -168,25 +230,42 @@ app.on('ready', () => {
 //         return false;
 //     });
   
-})
+});
+
+
+ipcMain.handle("load-locale-data", async (_, locale: string) => {
+  try {
+    const filePath = path.join(__dirname, "locales", `${locale}.json`);
+    if (fs.existsSync(filePath)) {
+      const data = fs.readFileSync(filePath, "utf8");
+      return { success: true, data: JSON.parse(data) };
+    }
+
+    console.log(`Locale file for '${locale}' not found, falling back to English.`);
+
+    // fallback to English
+    const enPath = path.join(__dirname, "locales", "en.json");
+    const enData = fs.readFileSync(enPath, "utf8");
+    return { success: true, data: JSON.parse(enData) };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+});
+
 
  ipcMain.on('close-window', () => {
     app.quit();
   });
 
     ipcMain.on('minimize-window', () => {
-    // The .minimize() function is a built-in method of the BrowserWindow class.
     mainWindow.minimize();
   });
 
   // Handler for the MAXIMIZE/RESTORE button
   ipcMain.on('maximize-window', () => {
-    // We check if the window is already maximized.
     if (mainWindow.isMaximized()) {
-      // If it is, we restore it to its previous size.
       mainWindow.unmaximize();
     } else {
-      // If it's not, we maximize it.
       mainWindow.maximize();
     }
   });
@@ -194,7 +273,6 @@ app.on('ready', () => {
 ipcMain.on("app-restart", () => {
   console.log("Restarting app due to WebSocket failure...");
 
-  // Optional: small delay to ensure clean exit
   setTimeout(() => {
     app.relaunch();
     app.exit(0);

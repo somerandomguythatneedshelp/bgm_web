@@ -1,5 +1,5 @@
-appId: com.tune.tune
 productName: tune64
+icon: renderer/public/images/icon.png
 directories:
   output: dist
   buildResources: resources

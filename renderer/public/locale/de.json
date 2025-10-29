@@ -1,0 +1,51 @@
+{
+  "verification": {
+    "checkemail": "Überprüfen Sie Ihre E-Mails auf einen Bestätigungslink.",
+    "emailsent": "Wir haben eine Bestätigungs-E-Mail an gesendet ",
+    "expiry": "Der Code läuft bald ab, geben Sie ihn daher bitte bald ein.",
+    "verify": "Überprüfen"
+  },
+  "auth": {
+    "detailsbelow": "Füllen Sie die folgenden Angaben aus",
+    "welcome": "Willkommen zurück! Bitte melden Sie sich an.",
+    "createaccount": "Ein Konto erstellen",
+    "signin": "Anmelden",
+    "enteremail": "Geben Sie Ihre E-Mail-Adresse ein",
+    "enterpassword": "Geben Sie Ihre Password ein",
+    "enterusername": "Geben Sie Ihren Benutzernamen ein",
+    "signinwithaccount": "Haben Sie bereits ein Konto? Anmelden",
+    "signupwithaccount": "Sie haben noch kein Konto? Registrieren Sie sich",
+    "create": "Erstellen",
+    "continue": "Weiter"
+  },
+  "playlists": {
+    "title": "Ihre Wiedergabelisten",
+    "addsong": "AHinzufügend '{song_name}' zur Wiedergabeliste",
+    "nopl_title": "Sie haben noch keine Wiedergabelisten erstellt.",
+    "nopl_subtitle": "Erstellen Sie unten Ihre erste Wiedergabeliste",
+    "play": "Wiedergabeliste abspielen",
+    "delete": "Wiedergabeliste löschen",
+    "remove": "Lied entfernen",
+    "new_placeholder": "Neuer Name für die Wiedergabeliste...",
+    "create": "Erstellen"
+  },
+  "home_player": {
+    "alt_cover": "Aktueller Musiktitel",
+    "pl_title": "Ihre Wiedergabelisten",
+    "pl_subtitle": "Anzeigen und Verwalten Ihrer Wiedergabelisten",
+    "recent_title": "Zuletzt gespielt",
+    "recent_subtitle": "Zurück springen",
+    "discover_title": "Entdecken",
+    "discover_subtitle": "Neuerscheinungen",
+    "search_placeholder": "Suche nach einem Song oder Künstler..."
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "save": "Save Changes",
+    "enable_auto_play": "Enable Auto-Play",
+    "auto_play_description": "Automatically play a similar song when the current one ends.",
+    "profile": "Profile",
+    "logout": "Log Out"
+  }
+}

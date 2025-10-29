@@ -24,10 +24,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   getRegistryValue: (keyPath) => ipcRenderer.invoke('get-registry-value', keyPath),
   getTuneInstallPath: () => ipcRenderer.invoke('get-tune-install-path'),
+  ReadLang: () => ipcRenderer.invoke('read-lang'),
+  loadLocaleData: (locale: string) => ipcRenderer.invoke("load-locale-data", locale),
   launchApp: (filePath: string) => ipcRenderer.invoke('launch-application', filePath),
   launchAppDetached: (appPath: string) => ipcRenderer.invoke('launch-app-detached', appPath),
   isTuneServiceRunning: () => ipcRenderer.invoke('check-service-running'),
   restartApp: () => ipcRenderer.send("app-restart"),
+  WriteLang: (locale) => ipcRenderer.invoke('write-lang', locale),
 });
 
 

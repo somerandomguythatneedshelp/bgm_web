@@ -15,6 +15,5 @@
     "isolatedModules": true,
     "jsx": "preserve"
   },
-  "exclude": ["node_modules", "renderer/next.config.js", "app", "dist"],
-  "include": ["typings.d.ts"]
+  "exclude": ["node_modules", "renderer/next.config.js", "app", "dist"]
 }

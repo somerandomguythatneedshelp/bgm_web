@@ -1,0 +1,51 @@
+{
+  "verification": {
+    "checkemail": "Controleer uw e-mail voor een verificatielink.",
+    "emailsent": "We hebben een verificatie-e-mail gestuurd naar ",
+    "expiry": "De code verloopt binnenkort, dus voer deze snel in.",
+    "verify": "Verifiëren"
+  },
+  "auth": {
+    "detailsbelow": "Vul de onderstaande gegevens in",
+    "welcome": "Welkom terug! Log in.",
+    "createaccount": "Maak een account aan",
+    "signin": "Inloggen",
+    "enteremail": "Voer uw wachtwoord in",
+    "enterpassword": "Enter your password",
+    "enterusername": "Voer uw gebruikersnaam in",
+    "signinwithaccount": "Heb je al een account? Log in",
+    "signupwithaccount": "Heb je nog geen account? Meld je aan",
+    "create": "Maken",
+    "continue": "Doorgaan"
+  },
+  "playlists": {
+    "title": "Uw afspeellijsten",
+    "addsong": "Toevoegen '{song_name}' naar afspeellijst",
+    "nopl_title": "Je hebt nog geen afspeellijsten gemaakt.",
+    "nopl_subtitle": "Maak hieronder uw eerste afspeellijst",
+    "play": "Afspeellijst afspelen",
+    "delete": "Nummer verwijderen",
+    "remove": "Remove song",
+    "new_placeholder": "Nieuwe afspeellijstnaam...",
+    "create": "Maken"
+  },
+  "home_player": {
+    "alt_cover": "Huidig ​​nummer",
+    "pl_title": "Uw afspeellijsten",
+    "pl_subtitle": "Bekijk en beheer uw afspeellijsten",
+    "recent_title": "Onlangs gespeeld",
+    "recent_subtitle": "Ga terug naar",
+    "discover_title": "Ontdek",
+    "discover_subtitle": "Nieuwe releases",
+    "search_placeholder": "Zoek naar een nummer of artiest..."
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "save": "Save Changes",
+    "enable_auto_play": "Enable Auto-Play",
+    "auto_play_description": "Automatically play a similar song when the current one ends.",
+    "profile": "Profile",
+    "logout": "Log Out"
+  }
+}

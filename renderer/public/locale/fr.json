@@ -1,0 +1,51 @@
+{
+  "verification": {
+    "checkemail": "Vérifiez votre boîte mail pour trouver le lien de vérification.",
+    "emailsent": "Nous avons envoyé un e-mail de vérification ",
+    "expiry": "Le code expire bientôt, veuillez donc le saisir rapidement.",
+    "verify": "Vérifier"
+  },
+  "auth": {
+    "detailsbelow": "Remplissez les informations ci-dessous",
+    "welcome": "Bon retour! Veuillez vous connecter.",
+    "createaccount": "Créer un compte",
+    "signin": "Se connecter",
+    "enteremail": "Entrez votre adresse e-mail",
+    "enterpassword": "Entrez votre mot de passe",
+    "enterusername": "Entrez votre nom d'utilisateurr ",
+    "signinwithaccount": "Vous avez déjà un compte ? Connectez-vous",
+    "signupwithaccount": "Vous n'avez pas encore de compte ? Inscrivez-vous",
+    "create": "Créer",
+    "continue": "Continuer"
+  },
+  "playlists": {
+    "title": "Vos listes de lecture",
+    "addsong": "Ajouter '{song_name}' ajouter à la liste de lecture",
+    "nopl_title": "Vous n'avez encore créé aucune liste de lecture.",
+    "nopl_subtitle": "Créez votre première liste de lecture ci-dessous",
+    "play": "Lire la liste de lecture",
+    "delete": "Supprimer la liste de lecture",
+    "remove": "Supprimer la chanson",
+    "new_placeholder": "Nouveau nom de la liste de lecture...",
+    "create": "Créer"
+  },
+  "home_player": {
+    "alt_cover": "Piste actuelle",
+    "pl_title": "Vos listes de lecture",
+    "pl_subtitle": "Consultez et gérez vos listes de lecture",
+    "recent_title": "Récemment joué",
+    "recent_subtitle": "Revenir en arrière",
+    "discover_title": "Découvrez",
+    "discover_subtitle": "Nouvelles sorties",
+    "search_placeholder": "Rechercher une chanson ou un artiste..."
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "save": "Save Changes",
+    "enable_auto_play": "Enable Auto-Play",
+    "auto_play_description": "Automatically play a similar song when the current one ends.",
+    "profile": "Profile",
+    "logout": "Log Out"
+  }
+}
