@@ -40,12 +40,12 @@
     "search_placeholder": "Rechercher une chanson ou un artiste..."
   },
   "settings": {
-    "title": "Settings",
-    "language": "Language",
-    "save": "Save Changes",
-    "enable_auto_play": "Enable Auto-Play",
-    "auto_play_description": "Automatically play a similar song when the current one ends.",
-    "profile": "Profile",
-    "logout": "Log Out"
+    "title": "Paramètres",
+    "language": "Langue",
+    "save": "Enregistrer les modifications",
+    "enable_auto_play": "Activer la lecture automatique",
+    "auto_play_description": "Lecture automatique d'une chanson similaire à la fin de la chanson en cours.",
+    "profile": "Profil",
+    "logout": "Se déconnecter"
   }
 }

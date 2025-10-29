@@ -90,7 +90,7 @@ export default function HomePage() {
   };
 
   const handleShowPlaylist = () => {
-    sendMessage("RequestPlaylists");
+    sendMessage("RequestPlaylistsUpdate");
     setUiState("playlists");
   };
 
@@ -304,6 +304,8 @@ export default function HomePage() {
             setStatusMessage("");
           } else if (event.data === "bluetooth_play_pause_shit") {
             handleTogglePlayPause();
+          } else if (event.data === "close") {
+            let daddy = (window as any).electronAPI.close();
           }
         }
       };

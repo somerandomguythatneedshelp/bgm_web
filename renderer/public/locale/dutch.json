@@ -40,12 +40,12 @@
     "search_placeholder": "Zoek naar een nummer of artiest..."
   },
   "settings": {
-    "title": "Settings",
-    "language": "Language",
-    "save": "Save Changes",
-    "enable_auto_play": "Enable Auto-Play",
-    "auto_play_description": "Automatically play a similar song when the current one ends.",
-    "profile": "Profile",
-    "logout": "Log Out"
+    "title": "Instellingen",
+    "language": "Taal",
+    "save": "Wijzigingen opslaan",
+    "enable_auto_play": "Automatisch afspelen inschakelen",
+    "auto_play_description": "Speel automatisch een soortgelijk nummer af wanneer het huidige nummer is afgelopen.",
+    "profile": "Profiel",
+    "logout": "Uitloggen"
   }
 }
