@@ -30,6 +30,7 @@ interface LyricLine {
 export default function HomePage() {
   const [trackInfo, setTrackInfo] = useState(null);
   const [currentTime, setCurrentTime] = useState(0);
+  const [signedInUsername, setSignedInUsername] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
@@ -257,6 +258,14 @@ export default function HomePage() {
               // Paused, set the time to the exact final position
               setCurrentTime(data.position);
             }
+          } else if (data.type === "userauthenticated") {
+            setUiState("home");
+            console.log("User authenticated:", data);
+            // remove "\u0000" from username
+            let cleanUsername = data.username.replace(/\u0000/g, "");
+            setSignedInUsername(cleanUsername);
+            setVerifyError("");
+            setStatusMessage("");
           } else if (data.type === "playlists_update") {
             setPlaylists(data.playlists || {});
           } else if (
@@ -298,15 +307,11 @@ export default function HomePage() {
             );
           } else if (event.data === "useralreadyexists") {
             setVerifyError("Username already taken. Please choose another.");
-          } else if (event.data === "userauthenticated") {
-            setUiState("home");
-            setVerifyError("");
-            setStatusMessage("");
           } else if (event.data === "bluetooth_play_pause_shit") {
             handleTogglePlayPause();
           } else if (event.data === "close") {
             let daddy = (window as any).electronAPI.close();
-          }
+          } 
         }
       };
     }
@@ -589,6 +594,7 @@ export default function HomePage() {
                 lyrics={lyrics}
                 onNextTrack={onNextTrack}
                 onPrevTrack={onPrevTrack}
+                username={signedInUsername}
               />
             )}
           </AnimatePresence>

@@ -13,7 +13,8 @@ export default function MusicPlayerUI({
   onShowPlaylists,
   lyrics,
   onNextTrack,
-  onPrevTrack
+  onPrevTrack,
+  username
 }) {
   const [showLyrics, setShowLyrics] = useState(false)
   const [isLiked, setIsLiked] = useState(false)
@@ -163,7 +164,7 @@ export default function MusicPlayerUI({
         </div>
 
       <div className="fixed top-10 right-12 z-50">
-  <ProfilePopup name="bob" />
+  <ProfilePopup name={username} />
 </div>
 
 
