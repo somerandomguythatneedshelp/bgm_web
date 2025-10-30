@@ -67,6 +67,12 @@ export default function HomePage() {
 
   useEffect(() => {
     (async () => {
+
+      setLocaleEmailAlreadyExists(await parseStrToLocale("errors.emailalreadyexists"));
+      setLocaleInvalidConfirmationCode(await parseStrToLocale("errors.invalidconfirmationcode"));
+      setLocaleUserAlreadyExists(await parseStrToLocale("errors.useralreadyexists"));
+      setLocaleInvalidTitle(await parseStrToLocale("errors.invalidtitle"));
+
       const email = await parseStrToLocale("auth.enteremail");
       const username = await parseStrToLocale("auth.enterusername");
       const password = await parseStrToLocale("auth.enterpassword");
@@ -83,11 +89,6 @@ export default function HomePage() {
       setLocaleContinue(await parseStrToLocale("continue"));
       setLocaleSignInWithAccount(await parseStrToLocale("auth.signinwithaccount"));
       setLocaleSignUpWithAccount(await parseStrToLocale("auth.signupwithaccount"));
-
-      setLocaleEmailAlreadyExists(await parseStrToLocale("error.emailalreadyexists"));
-      setLocaleInvalidConfirmationCode(await parseStrToLocale("error.invalidconfirmationcode"));
-      setLocaleUserAlreadyExists(await parseStrToLocale("error.useralreadyexists"));
-      setLocaleInvalidTitle(await parseStrToLocale("error.invalidtitle"));
 
       setLocaleCheckEmail(await parseStrToLocale("auth.checkemail"));
       setLocaleEmailSent(await parseStrToLocale("auth.emailsent"));
@@ -658,7 +659,7 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 p-4 rounded-lg bg-red-600 text-white shadow-2xl"
+            className="fixed bottom-10 -translate-x-1/2 z-50 p-4 rounded-lg bg-red-600 text-white shadow-2xl"
           >
             <p className="font-medium">{message}</p>
           </motion.div>
