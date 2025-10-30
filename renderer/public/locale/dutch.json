@@ -47,5 +47,11 @@
     "auto_play_description": "Speel automatisch een soortgelijk nummer af wanneer het huidige nummer is afgelopen.",
     "profile": "Profiel",
     "logout": "Uitloggen"
+  },
+  "errors": {
+    "emailalreadyexists": "Er bestaat al een gebruiker met dit e-mailadres.",
+    "invalidconfirmationcode": "De bevestigingscode is ongeldig of is verlopen.",
+    "useralreadyexists": "Deze naam is al in gebruik. Kies een andere.",
+    "invalidtitle": "Deze titel kan niet worden afgespeeld. Probeer het later nog eens."
   }
 }

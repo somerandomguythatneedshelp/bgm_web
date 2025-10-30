@@ -47,5 +47,11 @@
     "auto_play_description": "Spela automatiskt en liknande låt när den aktuella slutar.",
     "profile": "Profil",
     "logout": "Logga ut"
+  },
+  "errors": {
+    "emailalreadyexists": "En användare med denna e-postadress finns redan.",
+    "invalidconfirmationcode": "Bekräftelsekoden är ogiltig eller har gått ut.",
+    "useralreadyexists": "Detta namn är redan upptaget. Välj ett annat.",
+    "invalidtitle": "Denna titel kunde inte spelas upp. Försök igen senare."
   }
 }

@@ -37,13 +37,14 @@ export default function HomePage() {
   const [password, setPassword] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
-  const [uiState, setUiState] = useState("auth");
+  const [uiState, setUiState] = useState("connecting");
   const ws = useRef<WebSocket | null>(null);
   const [lyrics, setLyrics] = useState([]);
   const [verifyError, setVerifyError] = useState("");
   const timerRef = useRef(null);
   const syncInfoRef = useRef({ serverStartTime: 0, startPosition: 0 });
   const [playlists, setPlaylists] = useState<Record<string, Track[]>>({});
+  const [globalError, setGlobalError] = useState("");
 
   const [emailPlaceholder, setEmailPlaceholder] = useState("Loading...");
   const [usernamePlaceholder, setUsernamePlaceholder] = useState("Loading...");
@@ -56,6 +57,13 @@ export default function HomePage() {
   const [localeContinue, setLocaleContinue] = useState("Loading...");
   const [localeSignInWithAccount, setLocaleSignInWithAccount] = useState("Loading...");
   const [localeSignUpWithAccount, setLocaleSignUpWithAccount] = useState("Loading...");
+  const [localeEmailAlreadyExists, setLocaleEmailAlreadyExists] = useState("Loading...");
+  const [localeInvalidConfirmationCode, setLocaleInvalidConfirmationCode] = useState("Loading...");
+  const [localeUserAlreadyExists, setLocaleUserAlreadyExists] = useState("Loading...");
+  const [localeInvalidTitle, setLocaleInvalidTitle] = useState("Loading...");
+  const [localeCheckEmail, setLocaleCheckEmail] = useState("Loading...");
+  const [localeEmailSent, setLocaleEmailSent] = useState("Loading...");
+  const [localeExpiry, setLocaleExpiry] = useState("Loading...");
 
   useEffect(() => {
     (async () => {
@@ -75,6 +83,15 @@ export default function HomePage() {
       setLocaleContinue(await parseStrToLocale("continue"));
       setLocaleSignInWithAccount(await parseStrToLocale("auth.signinwithaccount"));
       setLocaleSignUpWithAccount(await parseStrToLocale("auth.signupwithaccount"));
+
+      setLocaleEmailAlreadyExists(await parseStrToLocale("error.emailalreadyexists"));
+      setLocaleInvalidConfirmationCode(await parseStrToLocale("error.invalidconfirmationcode"));
+      setLocaleUserAlreadyExists(await parseStrToLocale("error.useralreadyexists"));
+      setLocaleInvalidTitle(await parseStrToLocale("error.invalidtitle"));
+
+      setLocaleCheckEmail(await parseStrToLocale("auth.checkemail"));
+      setLocaleEmailSent(await parseStrToLocale("auth.emailsent"));
+      setLocaleExpiry(await parseStrToLocale("auth.expiry"));
     })();
   }, []);
 
@@ -221,6 +238,14 @@ export default function HomePage() {
             console.log("[Debug] Received playback_position data:", data);
             setCurrentTime(data.position);
           }
+          if (data.type === "playback_error") {
+            console.error("[Playback Error]:", data.message);
+            setGlobalError(localeInvalidTitle);
+            
+            setTimeout(() => {
+              setGlobalError("");
+            }, 5000); 
+          }
           if (data.type === "lyics_update") {
             console.log("[Debug] Received lyics_update data:", data);
             const parsedLyrics = parseSRT(data.lyricsUrl);
@@ -268,9 +293,7 @@ export default function HomePage() {
             setStatusMessage("");
           } else if (data.type === "playlists_update") {
             setPlaylists(data.playlists || {});
-          } else if (
-            data.type === "songupdatefromwhentheuserclosedfrontendapp"
-          ) {
+          } else if (data.type === "songupdatefromwhentheuserclosedfrontendapp") {
             // [Debug Checkpoint]
             console.log(
               "[Debug] Received songupdatefromwhentheuserclosedfrontendapp data:",
@@ -294,23 +317,29 @@ export default function HomePage() {
                 setLyrics(parsedLyrics);
               }
             }
-          }
+          } 
         } catch (e) {
           if (event.data === "emailconfirmation") {
             setUiState("verify");
             setStatusMessage("");
           } else if (event.data === "emailalreadyexists") {
-            setVerifyError("An account with this email already exists.");
+            setVerifyError(localeEmailAlreadyExists);
           } else if (event.data === "invalidconfirmationcode") {
-            setVerifyError(
-              "The verification code is incorrect. Please try again."
-            );
+            setVerifyError(localeInvalidConfirmationCode);
           } else if (event.data === "useralreadyexists") {
-            setVerifyError("Username already taken. Please choose another.");
+            setVerifyError(localeUserAlreadyExists);
           } else if (event.data === "bluetooth_play_pause_shit") {
             handleTogglePlayPause();
           } else if (event.data === "close") {
             let daddy = (window as any).electronAPI.close();
+            daddy.then(() => {
+              console.log("App closed successfully.");
+            }).catch((err) => {
+              console.error("Error closing app:", err);
+            });
+          } else if (event.data === "auth_required") {
+            setUiState("auth");
+            setStatusMessage(""); 
           } 
         }
       };
@@ -436,9 +465,9 @@ export default function HomePage() {
 
      return (
         <div className="w-full max-w-sm rounded-xl bg-[#1c1c1c] p-8 shadow-lg text-center">
-            <h1 className="text-2xl font-semibold tracking-tight">Check your email</h1>
-            <p className="text-sm text-gray-400 mt-2">We've sent a 6-digit code to {email}.</p>
-            <p className="text-sm text-gray-400">The code expires shortly, so please enter it soon.</p>
+            <h1 className="text-2xl font-semibold tracking-tight">{localeCheckEmail}</h1>
+            <p className="text-sm text-gray-400 mt-2">{localeEmailSent} {email}.</p>
+            <p className="text-sm text-gray-400">{localeExpiry}</p>
 
             <span className="text-sm" style={{ color: '#cf7474ff' }}>{errorText}</span>
             
@@ -566,6 +595,22 @@ export default function HomePage() {
         <TitleBar />
         <main className="w-full flex flex-col items-center justify-center">
           <AnimatePresence mode="wait">
+            {uiState === "connecting" && (
+              <motion.div
+                key="connecting"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-col items-center gap-4 text-white"
+              >
+                <svg className="animate-spin h-10 w-10 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                {/* The statusMessage from TryLaunchServer will show here */}
+                <p className="text-lg text-gray-300">{statusMessage || "Connecting to service..."}</p>
+              </motion.div>
+            )}
             {uiState === "playlists" && (
               <PlaylistsUi
                 playlists={playlists}
@@ -599,7 +644,25 @@ export default function HomePage() {
             )}
           </AnimatePresence>
         </main>
+        <ErrorToast message={globalError} />
       </div>
     </div>
   );
 }
+
+   const ErrorToast = ({ message }) => {
+    return (
+      <AnimatePresence>
+        {message && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 p-4 rounded-lg bg-red-600 text-white shadow-2xl"
+          >
+            <p className="font-medium">{message}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    );
+  };

@@ -47,5 +47,11 @@
     "auto_play_description": "Automatically play a similar song when the current one ends.",
     "profile": "Profile",
     "logout": "Log Out"
+  },
+  "errors": {
+    "emailalreadyexists": "A user with this email already exists.",
+    "invalidconfirmationcode": "The confirmation code is invalid or has expired.",
+    "useralreadyexists": "This name has been taken. Please choose another.",
+    "invalidtitle": "This title could not be played. Try again later."
   }
 }

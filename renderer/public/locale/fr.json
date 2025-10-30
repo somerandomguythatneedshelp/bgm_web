@@ -47,5 +47,11 @@
     "auto_play_description": "Lecture automatique d'une chanson similaire à la fin de la chanson en cours.",
     "profile": "Profil",
     "logout": "Se déconnecter"
+  },
+  "errors": {
+    "emailalreadyexists": "Un utilisateur avec cette adresse e-mail existe déjà.",
+    "invalidconfirmationcode": "Le code de confirmation n'est pas valide ou a expiré.",
+    "useralreadyexists": "Ce nom est déjà utilisé. Veuillez en choisir un autre.",
+    "invalidtitle": "Ce titre n'a pas pu être lu. Réessayez plus tard."
   }
 }

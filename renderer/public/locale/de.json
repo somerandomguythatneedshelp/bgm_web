@@ -47,5 +47,11 @@
     "auto_play_description": "Spiele automatisch einen ähnlichen Song, wenn der aktuelle Song endet.",
     "profile": "Profil",
     "logout": "Ausloggen"
+  },
+  "errors": {
+    "emailalreadyexists": "Ein Benutzer mit dieser E-Mail-Adresse ist bereits vorhanden.",
+    "invalidconfirmationcode": "Der Bestätigungscode ist ungültig oder abgelaufen.",
+    "useralreadyexists": "Dieser Name ist bereits vergeben. Bitte wählen Sie einen anderen.",
+    "invalidtitle": "Dieser Titel konnte nicht abgespielt werden. Versuchen Sie es später erneut."
   }
 }
