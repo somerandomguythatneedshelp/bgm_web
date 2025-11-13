@@ -46,7 +46,6 @@ export default function SettingsUi({ onBack, sendMessage }: SettingsUiProps) {
   }, []);
 
   const handleSave = async () => {
-    // This is your existing logic
     sendMessage(`SaveSettings: ${JSON.stringify({ selectedLanguage, autoPlayEnabled })}`);
 
     try {

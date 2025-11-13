@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import TitleBar from "./components/Titlebar/Titlebar";
 import { motion, AnimatePresence } from "framer-motion";
-import { parseStrToLocale, parseSRT, Track } from "./utils/Utils";
+import { parseStrToLocale, parseTTML, Track } from "./utils/Utils";
 import { parse } from "path";
 import MusicPlayerUI from "./components/MusicPlayer/MusicPlayer";
 import PlaylistsUi from "./components/Playlists/PlaylistsUi";
@@ -45,6 +45,8 @@ export default function HomePage() {
   const syncInfoRef = useRef({ serverStartTime: 0, startPosition: 0 });
   const [playlists, setPlaylists] = useState<Record<string, Track[]>>({});
   const [globalError, setGlobalError] = useState("");
+  const [bgTone, setBgTone] = useState(0);
+    const [activeLineIndex, setActiveLineIndex] = useState(-1); // used in Lyrics Player
 
   const [emailPlaceholder, setEmailPlaceholder] = useState("Loading...");
   const [usernamePlaceholder, setUsernamePlaceholder] = useState("Loading...");
@@ -249,7 +251,8 @@ export default function HomePage() {
           }
           if (data.type === "lyics_update") {
             console.log("[Debug] Received lyics_update data:", data);
-            const parsedLyrics = parseSRT(data.lyricsUrl);
+            const parsedLyrics = parseTTML(data.lyricsUrl);
+            //console.log("[Debug] Parsed lyrics:", data.lyricsUrl);
             if (parsedLyrics && parsedLyrics.length > 0) {
               setLyrics(parsedLyrics);
             }
@@ -313,7 +316,7 @@ export default function HomePage() {
               data.current_position.position
             );
             if (data.lyricsUrl != "") {
-              const parsedLyrics = parseSRT(data.lyricsUrl);
+              const parsedLyrics = parseTTML(data.lyricsUrl);
               if (parsedLyrics && parsedLyrics.length > 0) {
                 setLyrics(parsedLyrics);
               }
@@ -579,11 +582,25 @@ export default function HomePage() {
     </div>
   );
 
-  const backgroundStyle = {
-    backgroundImage: trackInfo?.coverArtUrl
-      ? `url(${trackInfo.coverArtUrl})`
-      : "linear-gradient(135deg, #151516ff 0%, #1f1e20ff 100%)",
-  };
+  useEffect(() => {
+  if (activeLineIndex === -1) return;
+
+  // Create a subtle "pulse" whenever the active line changes
+  setBgTone(0.1);
+  const timeout = setTimeout(() => setBgTone(0), 700);
+
+  return () => clearTimeout(timeout);
+}, [activeLineIndex]);
+
+const backgroundStyle = {
+  backgroundImage: trackInfo?.coverArtUrl
+    ? `url(${trackInfo.coverArtUrl})`
+    : "linear-gradient(135deg, #151516 0%, #1f1e20 100%)",
+  filter: `blur(40px) brightness(${1 + bgTone}) saturate(${1 + bgTone * 0.8})`,
+  transform: `scale(${1.08 + bgTone * 0.05})`,
+  transition: "all 1.2s ease-out",
+};
+
 
   return (
       <div className="relative h-screen overflow-hidden font-sans text-white transition-all duration-1000">
@@ -641,6 +658,8 @@ export default function HomePage() {
                 onNextTrack={onNextTrack}
                 onPrevTrack={onPrevTrack}
                 username={signedInUsername}
+                activeLineIndex={activeLineIndex}
+                setActiveLineIndex={setActiveLineIndex}
               />
             )}
           </AnimatePresence>

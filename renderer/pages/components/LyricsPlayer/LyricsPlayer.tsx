@@ -1,150 +1,265 @@
-import React, { useEffect, useRef, useState } from "react"
+import React, { useEffect, useRef, useState, useMemo } from "react";
+
+export interface WordTiming {
+  text: string;
+  start: number;
+  end: number;
+}
 
 interface LyricLine {
-  time: number
-  text: string
+  time: number;
+  text: string;
+  words?: WordTiming[];
 }
 
 interface LyricsPlayerProps {
-  lyrics: LyricLine[]
-  currentTime: number
-  isPlaying?: boolean
-  song_id?: string | number 
+  lyrics: LyricLine[];
+  currentTime: number;
+  activeLineIndex?: number;
+  setActiveLineIndex?: (index: number) => void;
+  isPlaying?: boolean;
+  song_id?: string | number;
 }
 
-export default function LyricsPlayer ({ lyrics, currentTime, isPlaying = true, song_id }: LyricsPlayerProps) {
-  const [activeLineIndex, setActiveLineIndex] = useState(-1)
-  const [isTransitioning, setIsTransitioning] = useState(false)
-  const [displayLyrics, setDisplayLyrics] = useState(lyrics)
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const prevsong_idRef = useRef(song_id)
+export default function LyricsPlayer({
+  lyrics = [],
+  currentTime,
+  activeLineIndex,
+  setActiveLineIndex = () => {},
+  isPlaying = true,
+  song_id,
+}: LyricsPlayerProps) {
+  const [activeWordIndex, setActiveWordIndex] = useState(-1);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [displayLyrics, setDisplayLyrics] = useState(lyrics);
 
-  const customScrollbarStyles = `
-    .scrollbar-custom::-webkit-scrollbar { width: 6px; }
-    .scrollbar-custom::-webkit-scrollbar-track { background: transparent; }
-    .scrollbar-custom::-webkit-scrollbar-thumb { 
-      background: linear-gradient(to bottom, rgba(234, 231, 236, 0.3), rgba(165, 160, 170, 0.6)); 
-      border-radius: 3px; 
-      transition: all 0.3s ease;
-    }
-    .scrollbar-custom::-webkit-scrollbar-thumb:hover { 
-      background: linear-gradient(to bottom, rgba(210, 205, 214, 0.5), rgba(121, 118, 124, 0.88)); 
-    }
-  `
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const prevsong_idRef = useRef(song_id);
+  const rafRef = useRef<number>();
 
+  /** --- Performance: Memoize lines --- */
+  const memoizedLyrics = useMemo(() => displayLyrics, [displayLyrics]);
+
+  /** --- Handle song transition --- */
   useEffect(() => {
     if (prevsong_idRef.current !== song_id && prevsong_idRef.current !== undefined) {
-      // Song changed - start transition
-      setIsTransitioning(true)
-
-      // Fade out current lyrics
+      setIsTransitioning(true);
       setTimeout(() => {
-        setDisplayLyrics(lyrics)
-        setActiveLineIndex(-1)
-
-        // Fade back in with new lyrics
-        setTimeout(() => {
-          setIsTransitioning(false)
-        }, 200) // Slightly longer fade in for smoother effect
-      }, 400) // Longer fade out for smoother transition
+        setDisplayLyrics(lyrics);
+        setActiveLineIndex(-1);
+        setTimeout(() => setIsTransitioning(false), 250);
+      }, 300);
     } else {
-      // Same song or initial load
-      setDisplayLyrics(lyrics)
+      setDisplayLyrics(lyrics);
     }
+    prevsong_idRef.current = song_id;
+  }, [lyrics, song_id]);
 
-    prevsong_idRef.current = song_id
-  }, [lyrics, song_id])
 
   useEffect(() => {
-    if (!displayLyrics || displayLyrics.length === 0 || isTransitioning) return
+  if (!memoizedLyrics.length || isTransitioning) return;
 
-    let newIndex = -1
-    for (let i = 0; i < displayLyrics.length; i++) {
-      if (currentTime >= displayLyrics[i].time) {
-        newIndex = i
-      } else {
-        break
+  cancelAnimationFrame(rafRef.current!);
+  const update = () => {
+    let newIndex = -1;
+    for (let i = 0; i < memoizedLyrics.length; i++) {
+      const start = memoizedLyrics[i].time;
+      const next = memoizedLyrics[i + 1]?.time ?? Infinity;
+      if (currentTime >= start && currentTime < next) {
+        newIndex = i;
+        break;
       }
     }
-    if (newIndex !== activeLineIndex) setActiveLineIndex(newIndex)
-  }, [currentTime, displayLyrics, activeLineIndex, isTransitioning])
-
-   useEffect(() => {
-    if (activeLineIndex === -1 || !scrollContainerRef.current || isTransitioning) return
-
-    const activeLineElement = scrollContainerRef.current.children[activeLineIndex] as HTMLElement
-    if (activeLineElement) {
-      const containerHeight = scrollContainerRef.current.offsetHeight
-      const lineTop = activeLineElement.offsetTop
-      const lineHeight = activeLineElement.offsetHeight
-
-      scrollContainerRef.current.scrollTo({
-        top: lineTop - containerHeight / 2 + lineHeight / 2,
-        behavior: "smooth",
-      })
+    if (newIndex !== activeLineIndex) {
+      // 🔸 Reset word highlight immediately when the line changes
+      setActiveWordIndex(-1);
+      setActiveLineIndex(newIndex);
     }
-  }, [activeLineIndex, isTransitioning])
+    rafRef.current = requestAnimationFrame(update);
+  };
+  rafRef.current = requestAnimationFrame(update);
+  return () => cancelAnimationFrame(rafRef.current!);
+}, [currentTime, memoizedLyrics, isTransitioning]);
 
-  if (!displayLyrics || displayLyrics.length === 0) {
-    return (
-      <div
-        className={`flex items-center justify-center h-full text-center text-gray-400 transition-all duration-500 ease-out ${
-          isTransitioning ? "opacity-0 scale-95" : "opacity-100 scale-100"
-        }`}
-      >
-        <div className="space-y-2">
-          <svg className="w-12 h-12 mx-auto text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
-            />
-          </svg>
-          <p className="text-lg select-none">No lyrics available</p>
-        </div>
-      </div>
-    )
+
+  /** --- Efficient active line tracking --- */
+  useEffect(() => {
+    if (!memoizedLyrics.length || isTransitioning) return;
+
+    cancelAnimationFrame(rafRef.current!);
+    const update = () => {
+      let newIndex = -1;
+      for (let i = 0; i < memoizedLyrics.length; i++) {
+        const start = memoizedLyrics[i].time;
+        const next = memoizedLyrics[i + 1]?.time ?? Infinity;
+        if (currentTime >= start && currentTime < next) {
+          newIndex = i;
+          break;
+        }
+      }
+      if (newIndex !== activeLineIndex) setActiveLineIndex(newIndex);
+      rafRef.current = requestAnimationFrame(update);
+    };
+    rafRef.current = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(rafRef.current!);
+  }, [currentTime, memoizedLyrics, isTransitioning]);
+
+useEffect(() => {
+  if (activeLineIndex === -1 || isTransitioning) return;
+
+  const currentLine = memoizedLyrics[activeLineIndex];
+  if (!currentLine?.words) {
+    setActiveWordIndex(-1);
+    return;
   }
 
-  return (
-    <>
-      <style>{customScrollbarStyles}</style>
-      <div
-        ref={scrollContainerRef}
-        className={`h-full overflow-y-auto px-6 py-8 scrollbar-custom transition-all duration-500 ease-out ${
-          isTransitioning ? "opacity-0 scale-95" : "opacity-100 scale-100"
-        } ${!isPlaying ? "opacity-60" : ""}`}
-      >
-        {displayLyrics.map((line, index) => {
-          const isActive = index === activeLineIndex && !isTransitioning
-          const isPast = index < activeLineIndex && !isTransitioning
-          const isUpcoming = index > activeLineIndex && !isTransitioning
+  let newWord = -1;
+  for (let i = 0; i < currentLine.words.length; i++) {
+    const w = currentLine.words[i];
+    if (currentTime >= w.start && currentTime < w.end) {
+      newWord = i;
+      break;
+    }
+  }
+  if (newWord !== activeWordIndex) setActiveWordIndex(newWord);
+}, [currentTime, memoizedLyrics, activeLineIndex, isTransitioning]);
 
-          return (
-            <p
-              key={`${song_id}-${index}`}
-              className={`select-none transition-all duration-700 ease-out text-xl md:text-3xl py-3 px-4 font-medium leading-relaxed transform ${
-                isActive ? "text-white scale-105 opacity-100 translate-y-0" : "scale-100 translate-y-0"
-              } ${
-                isPast
-                  ? "text-gray-500 opacity-55"
-                  : isUpcoming
-                    ? "text-gray-400 opacity-60"
-                    : "text-gray-400 opacity-70"
-              }`}
-              style={{
-                filter: isActive ? "blur(0px)" : "blur(0.9px)",
-                textShadow: isActive ? "0 0 30px rgba(33, 31, 36, 0.4), 0 0 60px rgba(54, 51, 51, 0.2)" : "none",
-                borderRadius: isActive ? "12px" : "0px",
-              }}
-            >
-              {line.text}
-            </p>
-          )
-        })}
-        <div className="h-32" />
+
+  /** --- Auto-scroll active line into view --- */
+  useEffect(() => {
+    if (activeLineIndex === -1 || !scrollContainerRef.current) return;
+
+    const activeLine = scrollContainerRef.current.children[activeLineIndex] as HTMLElement;
+    if (!activeLine) return;
+
+    scrollContainerRef.current.scrollTo({
+      top: activeLine.offsetTop - scrollContainerRef.current.offsetHeight / 2 + activeLine.offsetHeight / 2,
+      behavior: "smooth",
+    });
+  }, [activeLineIndex]);
+
+  /** --- Styles --- */
+  const baseContainer =
+    "h-full no-scrollbar overflow-y-auto scrollbar-none px-8 py-8 transition-all duration-500 ease-out text-center select-none";
+  const fadeStyle = isTransitioning
+    ? "opacity-0 scale-95"
+    : "opacity-100 scale-100";
+  const inactiveOpacity = isPlaying ? "opacity-100" : "opacity-60";
+
+  if (!memoizedLyrics.length) {
+    return (
+      <div className="flex items-center justify-center h-full text-gray-400">
+        <p>No lyrics available</p>
       </div>
-    </>
-  )
+    );
+  }
+
+
+  return (
+    <div
+      ref={scrollContainerRef}
+      className={`${baseContainer} ${fadeStyle} ${inactiveOpacity}`}
+    >
+      {memoizedLyrics.map((line, i) => {
+        const isActive = i === activeLineIndex;
+        const isPast = i < activeLineIndex;
+        const isUpcoming = i > activeLineIndex;
+
+        const lineClass = `
+          transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]
+          text-[1.6rem] md:text-[2.0rem] font-semibold leading-relaxed
+          ${isActive ? "text-white scale-100" : "text-gray-400 scale-100"}
+          ${isPast ? "opacity-50" : isUpcoming ? "opacity-60" : ""}
+          ${isActive ? "drop-shadow-[0_0_25px_rgba(255,255,255,0.4)]" : ""}
+        `;
+
+        // Parallax-style blur/fade
+        const lineStyle = {
+          transform: `translateY(${isActive ? "0px" : isPast ? "-10px" : "10px"})`,
+          filter: isActive ? "blur(0px)" : "blur(1.2px)",
+          transition: "all 0.6s ease-out",
+        };
+
+if (line.words && line.words.length > 0) {
+  const showAsActive = i === activeLineIndex;
+  
+
+  return (
+    <p
+    key={`${song_id}-${i}`}
+    className={lineClass}
+    style={{
+      ...lineStyle,
+      overflow: "hidden",
+      wordWrap: "normal", // Keep this for legacy support
+      wordBreak: "normal", // 👈 ADD THIS to handle long words
+      whiteSpace: "normal",
+      lineHeight: "1.3",
+      margin: "0 auto",
+      textAlign: "left", // 👈 CHANGE to left-align the content
+      display: "block",
+    }}
+  >
+      {showAsActive
+        ? // 🔸 Only the active line gets word-level highlighting
+          line.words.map((word, wi) => {
+            const isCurrent = wi === activeWordIndex;
+            const isPassed = wi < activeWordIndex;
+            const isLastWord = wi === line.words!.length - 1;
+
+            return (
+              <React.Fragment key={`${song_id}-${i}-${wi}`}>
+                <span
+                  className={`transition-[color,transform] duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                    isCurrent
+                      ? "text-white"
+                      : isPassed
+                      ? "text-gray-300/80"
+                      : "text-gray-500/70"
+                  }`}
+                  style={{
+                    display: "inline",
+                    whiteSpace: "normal",
+                  }}
+                >
+                  {word.text}
+                </span>
+                
+                {!isLastWord && "\u00A0"}
+              </React.Fragment>
+            );
+          })
+        : // 🔸 All other lines show static text (no per-word highlight)
+          line.text}
+    </p>
+  );
+}
+
+
+        // Verse-synced fallback
+        return (
+          <p
+    key={`${song_id}-${i}`}
+    className={lineClass}
+    style={{
+      ...lineStyle,
+      overflow: "hidden",
+      wordWrap: "normal", // Keep this
+      wordBreak: "normal", // 👈 ADD THIS
+      whiteSpace: "normal",
+      maxWidth: "90%",
+      margin: "0 auto",
+      letterSpacing: "0.25px",
+      lineHeight: "1.3",
+      textAlign: "left", // 👈 CHANGE to left-align the content
+      display: "block",
+    }}
+  >
+            {line.text}
+          </p>
+        );
+      })}
+      <div className="h-32" />
+    </div>
+  );
 }

@@ -103,9 +103,9 @@ export default function PlaylistsUi({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className="w-full max-w-6xl h-[34rem] bg-black/20 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl flex flex-col p-8 text-white"
+      className="w-full max-w-6xl h-[34rem] bg-black/20 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl flex flex-col p-8 text-white no-scrollbar"
     >
-      <div className="flex items-center justify-between mb-6 flex-shrink-0">
+      <div className="flex items-center justify-between mb-6 flex-shrink-0 no-scrollbar">
         <button
           onClick={onBack}
           className="p-3 rounded-full hover:bg-white/10 transition-all duration-300 hover:scale-110"
@@ -170,7 +170,7 @@ export default function PlaylistsUi({
         </div>
       )}
 
-      <div className="flex-grow overflow-y-auto pr-2 scrollbar-custom space-y-6">
+      <div className="flex-grow overflow-y-auto pr-2 scrollbar-custom space-y-6 no-scrollbar">
         {Object.keys(playlists).length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
             <div className="p-4 rounded-full bg-gray-500/10">

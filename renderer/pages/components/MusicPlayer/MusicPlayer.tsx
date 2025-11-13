@@ -14,7 +14,9 @@ export default function MusicPlayerUI({
   lyrics,
   onNextTrack,
   onPrevTrack,
-  username
+  username,
+  activeLineIndex,
+  setActiveLineIndex,
 }) {
   const [showLyrics, setShowLyrics] = useState(false)
   const [isLiked, setIsLiked] = useState(false)
@@ -172,7 +174,11 @@ export default function MusicPlayerUI({
           className={`absolute right-0 transition-all duration-700 ease-out w-full md:w-1/2 flex-shrink-0 ${showLyrics ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4 -z-10"}`}
         >
           <div className="h-[24rem] overflow-hidden">
-            <LyricsPlayer lyrics={lyrics} currentTime={currentTime} />
+            <LyricsPlayer 
+            lyrics={lyrics}
+            currentTime={currentTime}
+            activeLineIndex={activeLineIndex}
+            setActiveLineIndex={setActiveLineIndex}  />
           </div>
         </div>
       </div>

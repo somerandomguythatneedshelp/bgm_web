@@ -12,67 +12,109 @@ export interface Track {
   song_length_sec: number;
 }
 
-const parseSRT = (srtText: string) => {
-    if (!srtText) return [];
+export interface WordTiming {
+  text: string;
+  start: number; // Time in seconds
+  end: number; // Time in seconds
+}
 
-    const lines = srtText.split(/\r?\n/);
-    const result = [];
-    let i = 0;
+// Represents a lyric line/paragraph (the output structure for LyricsPlayer)
+export interface LyricLine {
+  time: number; // Start time of the line/paragraph in seconds
+  text: string; // Full text of the line/paragraph
+  words?: WordTiming[]; // Optional: For character-synced TTML
+}
 
-    while (i < lines.length) {
-        // Skip empty lines
-        if (!lines[i]?.trim()) {
-            i++;
-            continue;
+export function parseTTML(ttmlContent: string): LyricLine[] {
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(ttmlContent, "text/xml");
+  const paragraphs = Array.from(xml.getElementsByTagName("p"));
+  const lyrics: LyricLine[] = [];
+
+  for (const p of paragraphs) {
+    const start = parseTime(p.getAttribute("begin"));
+    const end = parseTime(p.getAttribute("end"));
+
+    // Word-synced case: <span begin=... end=...>word</span>
+    const spans = Array.from(p.getElementsByTagName("span"));
+    if (spans.length > 0) {
+      let words: WordTiming[] = [];
+      for (let i = 0; i < spans.length; i++) {
+        let currentSpan = spans[i];
+        let combinedText = (currentSpan.textContent || "").trim();
+        let combinedStart = parseTime(currentSpan.getAttribute("begin")) ?? start;
+        let combinedEnd = parseTime(currentSpan.getAttribute("end")) ?? end;
+        let lastSpan = currentSpan;
+
+        let j = i + 1;
+        while (j < spans.length) {
+          const nextSpan = spans[j];
+          const nodeBetween = lastSpan.nextSibling;
+          let shouldMerge = false;
+
+          if (nodeBetween === nextSpan) {
+            shouldMerge = true;
+          } else if (nodeBetween && nodeBetween.nodeType === 3) {
+            const cleaned = (nodeBetween.textContent || "").replace(/[\n\r\t\f\v]/g, "");
+            if (cleaned === "") {
+              shouldMerge = true;
+            }
+          }
+
+          if (shouldMerge) {
+            combinedText += (nextSpan.textContent || "").trim();
+            combinedEnd = parseTime(nextSpan.getAttribute("end")) ?? end;
+            lastSpan = nextSpan;
+            j++;
+          } else {
+            break;
+          }
         }
 
-        // 1. Find Index Line (we can skip it if it's just a number)
-        const indexLine = lines[i];
-        if (!/^\d+$/.test(indexLine.trim())) {
-            i++; // Not a valid block, skip
-            continue;
-        }
-        i++;
+        words.push({
+          text: combinedText,
+          start: combinedStart,
+          end: combinedEnd,
+        });
 
-        // 2. Find Time Line
-        const timeLine = lines[i]?.trim();
-        if (!timeLine || timeLine.indexOf('-->') === -1) {
-            i++; // Not a valid time line, skip
-            continue;
-        }
-        i++;
-        
-        const timeMatch = timeLine.match(/(\d+):(\d+):(\d+),(\d+)/); // Find start time
-        if (!timeMatch) {
-            i++; // Invalid time format
-            continue;
-        }
+        i = j - 1;
+      }
 
-        const startTimeSec = 
-            parseInt(timeMatch[1]) * 3600 +
-            parseInt(timeMatch[2]) * 60 +
-            parseInt(timeMatch[3]) +
-            parseInt(timeMatch[4]) / 1000;
-
-        // 3. Read Text Lines (one or more)
-        let textLines: string[] = [];
-        while (lines[i] && lines[i].trim() !== "") {
-            textLines.push(lines[i].trim());
-            i++;
-        }
-
-        if (textLines.length > 0) {
-            result.push({
-                time: startTimeSec,
-                text: textLines.join('\n') // Join multi-lines with a newline
-            });
-        }
+      lyrics.push({
+        time: start,
+        text: words.map(w => w.text).join(" "),
+        words,
+      });
+    } else {
+      // Verse-synced line
+      lyrics.push({
+        time: start,
+        text: (p.textContent || "").trim(),
+      });
     }
+  }
 
-    return result;
-};
+  // Sort by time just in case
+  lyrics.sort((a, b) => a.time - b.time);
+  return lyrics;
+}
 
-export { parseSRT };
+function parseTime(t?: string | null): number {
+  if (!t) return 0;
+  // TTML times are usually in format "0:00:12.345" or "75.3s"
+  if (t.endsWith("s")) return parseFloat(t.replace("s", ""));
+  const parts = t.split(":").map(parseFloat);
+  if (parts.length === 3) {
+    const [h, m, s] = parts;
+    return h * 3600 + m * 60 + s;
+  }
+  if (parts.length === 2) {
+    const [m, s] = parts;
+    return m * 60 + s;
+  }
+  return parseFloat(t);
+}
+
 
 function getNestedValue(obj: any, key: string): string | undefined {
   return key.split(".").reduce((acc, part) => acc?.[part], obj);

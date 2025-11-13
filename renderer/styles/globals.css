@@ -1,3 +1,24 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* In your global or MusicPlayer CSS file */
+.lyric-line-fix > span {
+    /* Use !important to force the margin over any Flex/Grid gap=0 or similar rule */
+    margin-right: 0.5ch !important;
+}
+
+/* Ensure the last word doesn't have a margin */
+.lyric-line-fix > span:last-of-type {
+    margin-right: 0 !important;
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
