@@ -32,7 +32,7 @@ export default function SettingsUi({ onBack, sendMessage }: SettingsUiProps) {
   const [localeEnableAutoplayFeature, setLocaleEnableFeature] = useState("Loading...");
 
   const [selectedLanguage, setSelectedLanguage] = useState("en");
-  const [autoPlayEnabled, setAutoPlayEnabled] = useState(false); // New toggle state
+  const [autoPlayEnabled, setAutoPlayEnabled] = useState(false); 
   const [localeAutoplayDescription, setLocaleAutoplayDescription] = useState("Loading...");
 
   useEffect(() => {

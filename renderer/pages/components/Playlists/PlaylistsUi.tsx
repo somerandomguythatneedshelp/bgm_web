@@ -103,7 +103,7 @@ export default function PlaylistsUi({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className="w-full max-w-6xl h-[34rem] bg-black/20 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl flex flex-col p-8 text-white no-scrollbar"
+      className="w-full max-w-6xl h-[58rem] bg-black/20 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl flex flex-col p-8 text-white no-scrollbar"
     >
       <div className="flex items-center justify-between mb-6 flex-shrink-0 no-scrollbar">
         <button
