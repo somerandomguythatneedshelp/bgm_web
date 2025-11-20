@@ -111,6 +111,7 @@ export default function SettingsUi({ onBack, sendMessage }: SettingsUiProps) {
             <option value="sv-SE" className="bg-neutral-800">svenska</option>
             <option value="fr" className="bg-neutral-800">Français</option>
             <option value="dutch" className="bg-neutral-800">Nederlands</option>
+            <option value="ur" className="bg-neutral-800">اردو</option>
           </select>
         </div>
 
