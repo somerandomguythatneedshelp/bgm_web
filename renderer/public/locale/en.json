@@ -42,6 +42,7 @@
   "settings": {
     "title": "Settings",
     "language": "Language",
+    "preset_description": "Select an equalizer preset to enhance your listening experience.",
     "save": "Save Changes",
     "enable_auto_play": "Enable Auto-Play",
     "auto_play_description": "Automatically play a similar song when the current one ends.",
@@ -53,5 +54,16 @@
     "invalidconfirmationcode": "The confirmation code is invalid or has expired.",
     "useralreadyexists": "This name has been taken. Please choose another.",
     "invalidtitle": "This title could not be played. Try again later."
+  },
+  "presets": {
+    "preset_none": "None",
+    "preset_bass_boost": "Bass Boost",
+    "preset_vocal_bass": "Vocal Boost",
+    "preset_hip_hop": "Hip Hop",
+    "preset_rock": "Rock",
+    "preset_acoustic": "Acoustic",
+    "preset_dance": "Dance",
+    "preset_classical": "Classical",
+    "preset_late_night": "Late Night"
   }
 }

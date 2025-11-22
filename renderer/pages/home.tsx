@@ -99,12 +99,13 @@ export default function HomePage() {
   }, []);
 
   const sendMessage = (payload: string) => {
-    if (ws.current?.readyState === WebSocket.OPEN) {
-      ws.current.send(payload);
-    } else {
-      console.log("WebSocket not connected");
-    }
-  };
+  if (ws.current?.readyState === WebSocket.OPEN) {
+   console.log(`[WS] Sending payload: ${payload}`); // Log when sending
+   ws.current.send(payload);
+  } else {
+   console.error(`[WS ERROR] Failed to send payload: ${payload}. State is: ${ws.current?.readyState}`); // Log when it fails
+  }
+ };
 
   const handleGetPlaylists = (playlistName: string) => {
     sendMessage(`GetPlaylistDetails: ${playlistName}`);
@@ -660,6 +661,7 @@ const backgroundStyle = {
                 username={signedInUsername}
                 activeLineIndex={activeLineIndex}
                 setActiveLineIndex={setActiveLineIndex}
+                sendMessage={sendMessage}
               />
             )}
           </AnimatePresence>

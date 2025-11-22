@@ -153,6 +153,65 @@ ipcMain.handle('write-lang', async (event, newLocale) => {
   }
 });
 
+ipcMain.handle('write-eq', async (event, newEq) => {
+  // 1. Basic validation
+  if (!newEq || typeof newEq !== 'string') {
+    return { success: false, error: 'Invalid locale provided. Must be a non-empty string.' };
+  }
+
+  try {
+    const regKey = new WinReg({
+      hive: WinReg.HKCU,
+      key: '\\Software\\Tune\\tune',
+    });
+
+    // 2. Use a Promise to wrap the 'set' callback
+    await new Promise((resolve, reject) => {
+      // Use regKey.set(name, type, value, callback)
+      regKey.set('eq', WinReg.REG_SZ, newEq, (err) => {
+        if (err) {
+          // This could fail due to permissions or if the key doesn't exist
+          return reject(new Error(`Failed to write locale: ${err.message}`));
+        }
+        // Success
+        resolve();
+      });
+    });
+
+    // 3. Return a success object
+    return { success: true, value: newEq };
+
+  } catch (error) {
+    // 4. Catch any errors from the promise or instantiation
+    console.error(error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('read-eq', async() => {
+   try {
+    const regKey = new WinReg({
+      hive: WinReg.HKCU, // CHANGED: Use HKEY_CURRENT_USER
+      key:  '\\Software\\Tune\\tune', // CHANGED: The specific key path
+    });
+
+    const eq = await new Promise((resolve, reject) => {
+      // CHANGED: Get the 'InstallPath' value
+      regKey.get('eq', (err, item) => {
+        if (err) {
+          // This error often means the key or value doesn't exist
+          return reject(new Error('Could not find eq. Is the software installed?'));
+        }
+        resolve(item.value);
+      });
+    });
+    return { success: true, value: eq };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: error.message };
+  }
+})
+
 ipcMain.handle('get-tune-install-path', async () => {
   try {
     const regKey = new WinReg({

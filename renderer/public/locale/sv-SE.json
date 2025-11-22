@@ -42,6 +42,7 @@
     "settings": {
     "title": "Inställningar",
     "language": "Språk",
+    "preset_description": "اپنے سننے کے تجربے کو بہتر بنانے کے لیے ایک ایکولائزر پری سیٹ منتخب کریں۔",
     "save": "Spara ändringar",
     "enable_auto_play": "Aktivera autospelning",
     "auto_play_description": "Spela automatiskt en liknande låt när den aktuella slutar.",
@@ -53,5 +54,16 @@
     "invalidconfirmationcode": "Bekräftelsekoden är ogiltig eller har gått ut.",
     "useralreadyexists": "Detta namn är redan upptaget. Välj ett annat.",
     "invalidtitle": "Denna titel kunde inte spelas upp. Försök igen senare."
+  },
+  "presets": {
+    "preset_none": "Ingen",
+    "preset_bass_boost": "Basförstärkning",
+    "preset_vocal_bass": "آواز میں اضافہ",
+    "preset_hip_hop": "Hiphop",
+    "preset_rock": "Rock",
+    "preset_acoustic": "Akustisk",
+    "preset_dance": "Dans",
+    "preset_classical": "Klassisk",
+    "preset_late_night": "Sen natt"
   }
 }

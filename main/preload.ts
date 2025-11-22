@@ -31,6 +31,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   isTuneServiceRunning: () => ipcRenderer.invoke('check-service-running'),
   restartApp: () => ipcRenderer.send("app-restart"),
   WriteLang: (locale) => ipcRenderer.invoke('write-lang', locale),
+  ReadEq: () => ipcRenderer.invoke('read-eq'),
+  WriteEq: (eq) => ipcRenderer.invoke('write-eq', eq),
 });
 
 

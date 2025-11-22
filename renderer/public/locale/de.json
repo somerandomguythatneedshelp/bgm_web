@@ -42,6 +42,7 @@
   "settings": {
     "title": "Einstellungen",
     "language": "Sprache",
+    "preset_description": "Wählen Sie eine Equalizer-Voreinstellung, um Ihr Hörerlebnis zu verbessern.",
     "save": "Änderungen speichern",
     "enable_auto_play": "Automatische Wiedergabe aktivieren",
     "auto_play_description": "Spiele automatisch einen ähnlichen Song, wenn der aktuelle Song endet.",
@@ -53,5 +54,16 @@
     "invalidconfirmationcode": "Der Bestätigungscode ist ungültig oder abgelaufen.",
     "useralreadyexists": "Dieser Name ist bereits vergeben. Bitte wählen Sie einen anderen.",
     "invalidtitle": "Dieser Titel konnte nicht abgespielt werden. Versuchen Sie es später erneut."
+  },
+  "presets": {
+    "preset_none": "Keine",
+    "preset_bass_boost": "Bassverstärkung",
+    "preset_vocal_bass": "Stimmverstärkung",
+    "preset_hip_hop": "Hip Hop",
+    "preset_rock": "Rock",
+    "preset_acoustic": "Akustik",
+    "preset_dance": "Tanz",
+    "preset_classical": "Klassik",
+    "preset_late_night": "Späte Nacht"
   }
 }

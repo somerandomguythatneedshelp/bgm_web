@@ -30,7 +30,7 @@
     "create": "Maken"
   },
   "home_player": {
-    "alt_cover": "Huidig ​​nummer",
+    "alt_cover": "Huidig nummer",
     "pl_title": "Uw afspeellijsten",
     "pl_subtitle": "Bekijk en beheer uw afspeellijsten",
     "recent_title": "Onlangs gespeeld",
@@ -42,6 +42,7 @@
   "settings": {
     "title": "Instellingen",
     "language": "Taal",
+    "preset_description": "Selecteer een equalizerpreset om uw luisterervaring te verbeteren.",
     "save": "Wijzigingen opslaan",
     "enable_auto_play": "Automatisch afspelen inschakelen",
     "auto_play_description": "Speel automatisch een soortgelijk nummer af wanneer het huidige nummer is afgelopen.",
@@ -53,5 +54,16 @@
     "invalidconfirmationcode": "De bevestigingscode is ongeldig of is verlopen.",
     "useralreadyexists": "Deze naam is al in gebruik. Kies een andere.",
     "invalidtitle": "Deze titel kan niet worden afgespeeld. Probeer het later nog eens."
+  },
+  "presets": {
+    "preset_none": "Geen",
+    "preset_bass_boost": "Basversterking",
+    "preset_vocal_bass": "Vocal Boost",
+    "preset_hip_hop": "Hip-Hop",
+    "preset_rock": "Rock",
+    "preset_acoustic": "Akoestisch",
+    "preset_dance": "Dans",
+    "preset_classical": "Klassiek",
+    "preset_late_night": "Late avond"
   }
 }

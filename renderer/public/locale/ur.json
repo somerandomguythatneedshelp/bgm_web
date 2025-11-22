@@ -42,6 +42,7 @@
   "settings": {
     "title": "ترتیبات",
     "language": "زبان",
+    "preset_description": "اپنے سننے کے تجربے کو بہتر بنانے کے لیے ایک ایکولائزر پری سیٹ منتخب کریں۔",
     "save": "تبدیلیاں محفوظ کریں",
     "enable_auto_play": "خودکار چلانے کو فعال کریں",
     "auto_play_description": "جب موجودہ گانا ختم ہو جائے تو خودکار طور پر ایک ملتا جلتا گانا چلائیں۔",
@@ -53,5 +54,16 @@
     "invalidconfirmationcode": "تصدیقی کوڈ درست نہیں ہے یا اس کی میعاد ختم ہو چکی ہے۔",
     "useralreadyexists": "یہ نام پہلے ہی لے لیا گیا ہے۔ براہِ کرم کوئی اور نام منتخب کریں۔",
     "invalidtitle": "یہ عنوان کھیلا نہیں جا سکا۔ بعد میں دوبارہ کوشش کریں۔"
+  },
+  "presets": {
+    "preset_none": "کوئی نہیں",
+    "preset_bass_boost": "بیس بوسٹ",
+    "preset_vocal_bass": "آواز میں اضافہ",
+    "preset_hip_hop": "ہپ ہاپ",
+    "preset_rock": "راک",
+    "preset_acoustic": " صوتی",
+    "preset_dance": "رقص",
+    "preset_classical": "کلاسیکی",
+    "preset_late_night": "دیر رات"
   }
 }

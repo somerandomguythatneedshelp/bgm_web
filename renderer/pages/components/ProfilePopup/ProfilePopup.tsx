@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { parseStrToLocale } from "../../utils/Utils";
 import SettingsUi from "../Settings/Settings";
 
-export default function ProfilePopup({ name }) {
+export default function ProfilePopup({ name, sendMessage }) {
   const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState<"main" | "profile" | "settings">("main");
 
@@ -21,10 +21,6 @@ export default function ProfilePopup({ name }) {
       setLocaleLogOut(await parseStrToLocale("settings.logout"));
     })();
   }, []);
-
-  const sendMessage = (payload: string) => {
-    console.log("Message:", payload);
-  };
 
   return (
     <div className="flex text-[#ccc] text-[0.975rem]">

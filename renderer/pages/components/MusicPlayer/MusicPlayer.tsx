@@ -17,6 +17,7 @@ export default function MusicPlayerUI({
   username,
   activeLineIndex,
   setActiveLineIndex,
+  sendMessage
 }) {
   const [showLyrics, setShowLyrics] = useState(false)
   const [isLiked, setIsLiked] = useState(false)
@@ -166,7 +167,8 @@ export default function MusicPlayerUI({
         </div>
 
       <div className="fixed top-10 right-12 z-50">
-  <ProfilePopup name={username} />
+  <ProfilePopup name={username}
+   sendMessage={sendMessage}/>
 </div>
 
 
