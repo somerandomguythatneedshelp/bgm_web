@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef, useCallback } from "react"
 import { motion } from "framer-motion"
 import LyricsPlayer from "../LyricsPlayer/LyricsPlayer"
 import { parseStrToLocale } from "../../utils/Utils" 
@@ -17,11 +17,23 @@ export default function MusicPlayerUI({
   username,
   activeLineIndex,
   setActiveLineIndex,
-  sendMessage
+  sendMessage,
 }) {
   const [showLyrics, setShowLyrics] = useState(false)
   const [isLiked, setIsLiked] = useState(false)
 
+  // --- Scrubbing & Optimistic State ---
+  const [scrubTime, setScrubTime] = useState(null); 
+  const [isScrubbing, setIsScrubbing] = useState(false);
+  // Holds the sought time immediately after release to prevent visual snap-back
+  const [optimisticSeek, setOptimisticSeek] = useState(null);
+  
+  const progressBarRef = useRef(null);
+  const isScrubbingRef = useRef(false); 
+
+  const playing = isPlaying; // Local copy to modify during scrubbing
+
+  // --- Locale State ---
   const [localeAltCover, setLocaleAltCover] = useState("Loading...");
   const [localePlTitle, setLocalePlTitle] = useState("Loading...");
   const [localePlSubtitle, setLocalePlSubtitle] = useState("Loading...");
@@ -41,7 +53,6 @@ export default function MusicPlayerUI({
       setLocaleDiscoverSubtitle(await parseStrToLocale("home_player.discover_subtitle"));
     })();
   }, []);
-  // --- End Locale ---
 
   const {
     song_name = "...",
@@ -49,7 +60,7 @@ export default function MusicPlayerUI({
     album = "...",
     coverArtUrl = "",
     song_length_sec = 0,
-    song_id = 0, // Added song_id to match JSON
+    song_id = 0,
     lyrics: lyricsUrl = "",
   } = trackInfo || {}
 
@@ -59,6 +70,98 @@ export default function MusicPlayerUI({
     const secs = totalSeconds % 60
     return `${mins}:${secs.toString().padStart(2, "0")}`
   }
+
+  // --- Sync Optimistic State with Real Time ---
+  // If the real currentTime gets close to our optimistic seek, or if 2 seconds pass, clear the optimistic state.
+  useEffect(() => {
+    if (optimisticSeek !== null) {
+        const timeDiff = Math.abs(currentTime - optimisticSeek);
+        // If audio catches up (within 1.5s window), sync back to real time
+        if (timeDiff < 1.5) {
+            setOptimisticSeek(null);
+        }
+    }
+  }, [currentTime, optimisticSeek]);
+
+  // Failsafe: Clear optimistic seek after 2 seconds if audio never catches up
+  useEffect(() => {
+    if (optimisticSeek !== null) {
+        const timer = setTimeout(() => setOptimisticSeek(null), 2000);
+        return () => clearTimeout(timer);
+    }
+  }, [optimisticSeek]);
+
+
+  // **Determine Display Time**: 
+  // 1. Dragging? Show drag position.
+  // 2. Just dropped (optimistic)? Show drop position.
+  // 3. Normal? Show actual player time.
+  let displayTime = currentTime;
+  if (isScrubbing && scrubTime !== null) {
+      displayTime = scrubTime;
+  } else if (optimisticSeek !== null) {
+      displayTime = optimisticSeek;
+  }
+
+  const progressPercent = song_length_sec > 0 ? (displayTime / song_length_sec) * 100 : 0;
+
+
+  // --- Seek Logic ---
+  const calculateSeekTime = useCallback((clientX) => {
+    if (!progressBarRef.current) return 0;
+    const rect = progressBarRef.current.getBoundingClientRect();
+    const clickX = clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, clickX / rect.width));
+    return percentage * song_length_sec;
+  }, [song_length_sec]);
+
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+    if (song_length_sec === 0) return;
+
+    // Start scrubbing
+    isScrubbingRef.current = true;
+    setIsScrubbing(true);
+    setOptimisticSeek(null); // Clear any previous optimistic state
+
+    // Set initial position immediately
+    const startScrubTime = calculateSeekTime(e.clientX);
+    setScrubTime(startScrubTime);
+
+    const handleMouseMove = (moveEvent) => {
+      if (!isScrubbingRef.current) return;
+      const newTime = calculateSeekTime(moveEvent.clientX);
+      setScrubTime(newTime);
+    };
+
+    const handleMouseUp = (upEvent) => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+
+      if (!isScrubbingRef.current) return;
+
+      const finalSeekTime = calculateSeekTime(upEvent.clientX);
+      
+      // 1. Update visual state
+      setIsScrubbing(false);
+      isScrubbingRef.current = false;
+      setScrubTime(null);
+      
+      // 2. Set Optimistic "Hold" Time (keeps the bar at the target while audio loads)
+      setOptimisticSeek(finalSeekTime);
+
+      // 3. Send Message
+      if (sendMessage) {
+        sendMessage("seek: " + finalSeekTime);
+      }
+
+      const timer = setTimeout(() => {onTogglePlayPause(); onTogglePlayPause();}, 500);
+      return () => clearTimeout(timer);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  };
 
   return (
     <motion.div
@@ -90,13 +193,29 @@ export default function MusicPlayerUI({
 
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
-                  <span className="text-sm text-white/80 w-12 text-center font-mono">{formatTime(currentTime)}</span>
-                  <div className="flex-1 bg-white/10 rounded-full h-2 group cursor-pointer hover:h-2.5 transition-all duration-200">
-                    <div
-                      className="bg-gradient-to-r text-gray-500 h-full rounded-full transition-all duration-300 shadow-lg shadow-white-500/30"
-                      style={{ width: `${(currentTime / song_length_sec) * 100}%`, backgroundColor: "white", maxWidth: "100%" }}
-                    />
+                  <span className="text-sm text-white/80 w-12 text-center font-mono">{formatTime(displayTime)}</span>
+                  
+                  {/* --- Progress Bar --- */}
+                  <div 
+                    ref={progressBarRef}
+                    onMouseDown={handleMouseDown}
+                    className="flex-1 bg-white/10 rounded-full h-2 group cursor-pointer hover:h-2.5 transition-all duration-200 relative py-2 -my-2 bg-clip-content"
+                  >
+                     <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center">
+                       <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                            <div
+                            className="bg-gradient-to-r text-gray-500 h-full rounded-full transition-all duration-100 shadow-lg shadow-white-500/30"
+                            style={{ width: `${progressPercent}%`, backgroundColor: "white", maxWidth: "100%" }}
+                            />
+                       </div>
+                       {/* Handle is separated to avoid being clipped by overflow-hidden */}
+                       <div className={`absolute h-4 w-4 rounded-full bg-white transition-opacity duration-100 shadow-md ${isScrubbing || optimisticSeek ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                            style={{ left: `${progressPercent}%`, transform: 'translate(-50%, 0)' }}
+                       />
+                    </div>
                   </div>
+                  {/* --- End Progress Bar --- */}
+                  
                   <span className="text-sm text-white/80 w-12 text-center font-mono">
                     {formatTime(song_length_sec)}
                   </span>
@@ -113,21 +232,13 @@ export default function MusicPlayerUI({
                       stroke="currentColor"
                       viewBox="0 0 24 24"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeWidth={2}
-                        d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z"
-                      />
+                      <path strokeLinecap="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z" />
                     </svg>
                   </button>
 
                   <div className="flex items-center gap-6">
-                    <button 
-                    onClick={onPrevTrack}
-                    className="p-3 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-300 hover:scale-110">
-                      <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
-                      </svg>
+                    <button onClick={onPrevTrack} className="p-3 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-300 hover:scale-110">
+                      <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" /></svg>
                     </button>
 
                     <button
@@ -139,12 +250,8 @@ export default function MusicPlayerUI({
                       </svg>
                     </button>
 
-                    <button 
-                    onClick={onNextTrack}
-                    className="p-3 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-300 hover:scale-110">
-                      <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
-                      </svg>
+                    <button onClick={onNextTrack} className="p-3 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-300 hover:scale-110">
+                      <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" /></svg>
                     </button>
                   </div>
 
@@ -152,13 +259,7 @@ export default function MusicPlayerUI({
                     onClick={() => setShowLyrics(!showLyrics)}
                     className={`p-3 rounded-full transition-all duration-300 hover:scale-110 ${showLyrics ? "text-white-400 bg-white-400/10" : "text-gray-400 hover:text-white hover:bg-white/10"}`}
                   >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeWidth={2}
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                   </button>
                 </div>
               </div>
@@ -166,21 +267,15 @@ export default function MusicPlayerUI({
           </div>
         </div>
 
-      <div className="fixed top-10 right-12 z-50">
-  <ProfilePopup name={username}
-   sendMessage={sendMessage}/>
-</div>
-
+        <div className="fixed top-10 right-12 z-50">
+          <ProfilePopup name={username} sendMessage={sendMessage}/>
+        </div>
 
         <div
           className={`absolute right-0 transition-all duration-700 ease-out w-full md:w-1/2 flex-shrink-0 ${showLyrics ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4 -z-10"}`}
         >
           <div className="h-[24rem] overflow-hidden">
-            <LyricsPlayer 
-            lyrics={lyrics}
-            currentTime={currentTime}
-            activeLineIndex={activeLineIndex}
-            setActiveLineIndex={setActiveLineIndex}  />
+            <LyricsPlayer lyrics={lyrics} currentTime={currentTime} activeLineIndex={activeLineIndex} setActiveLineIndex={setActiveLineIndex}  />
           </div>
         </div>
       </div>
@@ -188,25 +283,16 @@ export default function MusicPlayerUI({
       <div className="w-full max-w-5xl space-y-6">
         <SearchBar onSearch={onSearch} />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <button
-            onClick={onShowPlaylists}
-            className="group p-6 rounded-2xl bg-black/15 backdrop-blur-md border border-white/10 hover:bg-black/25 hover:border-white/20 text-left transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
-          >
-            <div className="text-white font-semibold text-lg group-hover:text-white-300 transition-colors duration-300">
-              {localePlTitle}
-            </div>
+          <button onClick={onShowPlaylists} className="group p-6 rounded-2xl bg-black/15 backdrop-blur-md border border-white/10 hover:bg-black/25 hover:border-white/20 text-left transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
+            <div className="text-white font-semibold text-lg group-hover:text-white-300 transition-colors duration-300">{localePlTitle}</div>
             <div className="text-gray-300 text-sm mt-2">{localePlSubtitle}</div>
           </button>
           <button className="group p-6 rounded-2xl bg-black/15 backdrop-blur-md border border-white/10 hover:bg-black/25 hover:border-white/20 text-left transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
-            <div className="text-white font-semibold text-lg group-hover:text-white-300 transition-colors duration-300">
-              {localeRecentTitle}
-            </div>
+            <div className="text-white font-semibold text-lg group-hover:text-white-300 transition-colors duration-300">{localeRecentTitle}</div>
             <div className="text-gray-300 text-sm mt-2">{localeRecentSubtitle}</div>
           </button>
           <button className="group p-6 rounded-2xl bg-black/15 backdrop-blur-md border border-white/10 hover:bg-black/25 hover:border-white/20 text-left transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
-            <div className="text-white font-semibold text-lg group-hover:text-white-300 transition-colors duration-300">
-              {localeDiscoverTitle}
-            </div>
+            <div className="text-white font-semibold text-lg group-hover:text-white-300 transition-colors duration-300">{localeDiscoverTitle}</div>
             <div className="text-gray-300 text-sm mt-2">{localeDiscoverSubtitle}</div>
           </button>
         </div>
@@ -217,7 +303,6 @@ export default function MusicPlayerUI({
 
 const SearchBar = ({ onSearch }) => {
     const [query, setQuery] = useState("");
-    // --- Locale State ---
     const [localeSearch, setLocaleSearch] = useState("Loading...");
 
     useEffect(() => {
@@ -225,7 +310,6 @@ const SearchBar = ({ onSearch }) => {
         setLocaleSearch(await parseStrToLocale("home_player.search_placeholder"));
       })();
     }, []);
-    // --- End Locale ---
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -236,26 +320,26 @@ const SearchBar = ({ onSearch }) => {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="mt-6">
-            <div className="relative">
-                <input
-                    type="text"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder={localeSearch}
-                    className="w-full p-4 pl-12 rounded-xl bg-black/30 backdrop-blur-md border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white-500 transition-all duration-300"
-                />
-                <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                </div>
-                <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-900 rounded-lg bg-white-600 hover:bg-white-700 transition-colors">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
-                </button>
-            </div>
-        </form>
+      <form onSubmit={handleSubmit} className="mt-6">
+          <div className="relative">
+              <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={localeSearch}
+                  className="w-full p-4 pl-12 rounded-xl bg-black/30 backdrop-blur-md border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white-500 transition-all duration-300"
+              />
+              <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+              </div>
+              <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-900 rounded-lg bg-white-600 hover:bg-white-700 transition-colors">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+              </button>
+          </div>
+      </form>
     );
   }

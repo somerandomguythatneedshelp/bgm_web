@@ -237,10 +237,13 @@ export default function HomePage() {
 
       socket.onmessage = (event) => {
         try {
+          console.log("[WS] Received message:", event.data);
           const data = JSON.parse(event.data);
           if (data.type === "playback_position") {
             console.log("[Debug] Received playback_position data:", data);
             setCurrentTime(data.position);
+            setIsPlaying(false);
+            setIsPlaying(true);
           }
           if (data.type === "playback_error") {
             console.error("[Playback Error]:", data.message);
@@ -345,7 +348,16 @@ export default function HomePage() {
           } else if (event.data === "auth_required") {
             setUiState("auth");
             setStatusMessage(""); 
-          } 
+          } else if (event.data.startsWith("playback_position")) {
+    // 1. Define the prefix string.
+    const prefix = "playback_position";
+    
+    // 2. Extract the substring that contains the timestamp value.
+    const timestampString = event.data.substring(prefix.length);
+    console.log("[Debug] Received playback_position string:", timestampString);
+    setCurrentTime(Number(timestampString));
+
+          }
         }
       };
     }
@@ -487,7 +499,7 @@ export default function HomePage() {
                             value={digit}
                             onChange={(e) => handleInputChange(e, index)}
                             onKeyDown={(e) => handleKeyDown(e, index)}
-                            className="w-12 h-14 text-center text-2xl font-bold rounded-md border border-gray-700 bg-transparent text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            className="w-12 h-14 text-center text-2xl font-bold rounded-md border border-gray-700 bg-transparent white focus:outline-none focus:ring-2 focus:ring-purple-500"
                         />
                     ))}
                 </div>
@@ -523,7 +535,7 @@ export default function HomePage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white-500"
+            className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-sm white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white-500"
           />
         )}
         <input
@@ -533,7 +545,7 @@ export default function HomePage() {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           required
-          className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white-500"
+          className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-sm white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white-500"
         />
         <input
           type="password"
@@ -541,7 +553,7 @@ export default function HomePage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white-500"
+          className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-sm white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white-500"
         />
 
         {isRegistering && <PasswordStrengthIndicator password={password} />}
