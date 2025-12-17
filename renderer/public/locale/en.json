@@ -27,7 +27,9 @@
     "delete": "Delete Playlist",
     "remove": "Remove song",
     "new_placeholder": "New playlist name...",
-    "create": "Create"
+    "create": "Create",
+    "add_current_song": "Add {currentTrack.song_name} to Playlist {name}",
+    "search_for_song": "Search for a song..."
   },
   "home_player": {
     "alt_cover": "Current Track",

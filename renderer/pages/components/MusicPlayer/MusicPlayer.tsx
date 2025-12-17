@@ -18,6 +18,9 @@ export default function MusicPlayerUI({
   activeLineIndex,
   setActiveLineIndex,
   sendMessage,
+  searchResults,
+  onSongSelect,
+  
 }) {
   const [showLyrics, setShowLyrics] = useState(false)
   const [isLiked, setIsLiked] = useState(false)
@@ -30,8 +33,6 @@ export default function MusicPlayerUI({
   
   const progressBarRef = useRef(null);
   const isScrubbingRef = useRef(false); 
-
-  const playing = isPlaying; // Local copy to modify during scrubbing
 
   // --- Locale State ---
   const [localeAltCover, setLocaleAltCover] = useState("Loading...");

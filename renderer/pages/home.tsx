@@ -46,7 +46,9 @@ export default function HomePage() {
   const [playlists, setPlaylists] = useState<Record<string, Track[]>>({});
   const [globalError, setGlobalError] = useState("");
   const [bgTone, setBgTone] = useState(0);
-    const [activeLineIndex, setActiveLineIndex] = useState(-1); // used in Lyrics Player
+  const [activeLineIndex, setActiveLineIndex] = useState(-1); // used in Lyrics Player
+
+  const [searchResults, setSearchResults] = useState(null); // Will hold the array of songs or null
 
   const [emailPlaceholder, setEmailPlaceholder] = useState("Loading...");
   const [usernamePlaceholder, setUsernamePlaceholder] = useState("Loading...");
@@ -119,6 +121,12 @@ export default function HomePage() {
   const handleTogglePlayPause = () => {
     sendMessage("toggle_play_pause");
   };
+
+  const handleSongSelect = (songInfo) => {
+    sendMessage("play_song_id: " + songInfo.song_id);
+
+    setSearchResults(null); 
+};
 
   async function TryLaunchServer() {
     setStatusMessage("Finding application...");
@@ -244,6 +252,9 @@ export default function HomePage() {
             setCurrentTime(data.position);
             setIsPlaying(false);
             setIsPlaying(true);
+          }
+          if (data.type === "search_results") {
+            setSearchResults(data.results);
           }
           if (data.type === "playback_error") {
             console.error("[Playback Error]:", data.message);
@@ -674,6 +685,8 @@ const backgroundStyle = {
                 activeLineIndex={activeLineIndex}
                 setActiveLineIndex={setActiveLineIndex}
                 sendMessage={sendMessage}
+                searchResults={searchResults}
+                onSongSelect={handleSongSelect}
               />
             )}
           </AnimatePresence>
