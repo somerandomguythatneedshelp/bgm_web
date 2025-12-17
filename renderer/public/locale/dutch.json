@@ -27,7 +27,9 @@
     "delete": "Nummer verwijderen",
     "remove": "Remove song",
     "new_placeholder": "Nieuwe afspeellijstnaam...",
-    "create": "Maken"
+    "create": "Maken",
+    "add_current_song": "Voeg {currentTrack.song_name} toe aan afspeellijst {name}",
+    "search_for_song": "Zoek een nummer..."
   },
   "home_player": {
     "alt_cover": "Huidig nummer",

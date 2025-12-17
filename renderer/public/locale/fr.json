@@ -27,7 +27,9 @@
     "delete": "Supprimer la liste de lecture",
     "remove": "Supprimer la chanson",
     "new_placeholder": "Nouveau nom de la liste de lecture...",
-    "create": "Créer"
+    "create": "Créer",
+    "add_current_song": "Ajouter {currentTrack.song_name} à la liste de lecture {name}",
+    "search_for_song": "Rechercher une chanson..."
   },
   "home_player": {
     "alt_cover": "Piste actuelle",

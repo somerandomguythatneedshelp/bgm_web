@@ -27,7 +27,9 @@
     "delete": "Wiedergabeliste löschen",
     "remove": "Lied entfernen",
     "new_placeholder": "Neuer Name für die Wiedergabeliste...",
-    "create": "Erstellen"
+    "create": "Erstellen",
+    "add_current_song": "{currentTrack.song_name} zur Wiedergabeliste {name} hinzufügen",
+    "search_for_song": "Nach einem Lied suchen..."
   },
   "home_player": {
     "alt_cover": "Aktueller Musiktitel",

@@ -27,7 +27,9 @@
     "delete": "پلے لسٹ حذف کریں",
     "remove": "گیت ہٹائیں",
     "new_placeholder": "نئی پلے لسٹ کا نام...",
-    "create": "تخلیق کریں"
+    "create": "تخلیق کریں",
+    "add_current_song": "{currentTrack.song_name} کو پلے لسٹ {name} میں شامل کریں۔",
+    "search_for_song": "گیت تلاش کریں..."
   },
   "home_player": {
     "alt_cover": "موجودہ ٹریک",

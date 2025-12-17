@@ -27,7 +27,9 @@
     "delete": "Ta bort spellista",
     "remove": "Ta bort låt",
     "new_placeholder": "Nytt namn på spellista...",
-    "create": "Skapa"
+    "create": "Skapa",
+    "add_current_song": "Lägg till {currentTrack.song_name} till spellistan {name}",
+    "search_for_song": "Sök efter en låt..."
   },
   "home_player": {
     "alt_cover": "Aktuell spår",
@@ -42,7 +44,7 @@
     "settings": {
     "title": "Inställningar",
     "language": "Språk",
-    "preset_description": "اپنے سننے کے تجربے کو بہتر بنانے کے لیے ایک ایکولائزر پری سیٹ منتخب کریں۔",
+    "preset_description": "Välj en förinställd equalizer för att förbättra din lyssningsupplevelse.",
     "save": "Spara ändringar",
     "enable_auto_play": "Aktivera autospelning",
     "auto_play_description": "Spela automatiskt en liknande låt när den aktuella slutar.",

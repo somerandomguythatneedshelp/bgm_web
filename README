@@ -1,5 +1,5 @@
-make locale work in C++
-right now its manually set (my machine)
-ad a feature to update it manually in C++ side and add settings shit on frontend
+17/12/25
 
-also shi looks magestic 
+accidently deleted a folder i shouldnt have, too many things happening so like,
+more of the code will be done without the C++ intergration. when i have more time
+ill recode the whole app primarily in tsx
