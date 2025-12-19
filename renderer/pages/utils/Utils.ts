@@ -18,11 +18,11 @@ export interface WordTiming {
   end: number; // Time in seconds
 }
 
-// Represents a lyric line/paragraph (the output structure for LyricsPlayer)
 export interface LyricLine {
-  time: number; // Start time of the line/paragraph in seconds
-  text: string; // Full text of the line/paragraph
-  words?: WordTiming[]; // Optional: For character-synced TTML
+  time: number;
+  text: string;
+  words?: WordTiming[];
+  isAdlib?: boolean;
 }
 
 export function parseTTML(ttmlContent: string): LyricLine[] {
@@ -32,71 +32,48 @@ export function parseTTML(ttmlContent: string): LyricLine[] {
   const lyrics: LyricLine[] = [];
 
   for (const p of paragraphs) {
-    const start = parseTime(p.getAttribute("begin"));
-    const end = parseTime(p.getAttribute("end"));
-
-    // Word-synced case: <span begin=... end=...>word</span>
+    const pStart = parseTime(p.getAttribute("begin"));
+    const pEnd = parseTime(p.getAttribute("end"));
     const spans = Array.from(p.getElementsByTagName("span"));
+
     if (spans.length > 0) {
-      let words: WordTiming[] = [];
-      for (let i = 0; i < spans.length; i++) {
-        let currentSpan = spans[i];
-        let combinedText = (currentSpan.textContent || "").trim();
-        let combinedStart = parseTime(currentSpan.getAttribute("begin")) ?? start;
-        let combinedEnd = parseTime(currentSpan.getAttribute("end")) ?? end;
-        let lastSpan = currentSpan;
+      let currentLineWords: WordTiming[] = [];
 
-        let j = i + 1;
-        while (j < spans.length) {
-          const nextSpan = spans[j];
-          const nodeBetween = lastSpan.nextSibling;
-          let shouldMerge = false;
+      spans.forEach((span) => {
+        const text = span.childNodes[0]?.nodeValue || span.textContent || "";
+        const start = parseTime(span.getAttribute("begin")) ?? pStart;
+        const end = parseTime(span.getAttribute("end")) ?? pEnd;
 
-          if (nodeBetween === nextSpan) {
-            shouldMerge = true;
-          } else if (nodeBetween && nodeBetween.nodeType === 3) {
-            const cleaned = (nodeBetween.textContent || "").replace(/[\n\r\t\f\v]/g, "");
-            if (cleaned === "") {
-              shouldMerge = true;
-            }
-          }
+        // Detection logic: If word starts with "(" or follows an existing bracketed section
+        const isBrackets = text.trim().startsWith("(") || text.trim().endsWith(")");
 
-          if (shouldMerge) {
-            combinedText += (nextSpan.textContent || "").trim();
-            combinedEnd = parseTime(nextSpan.getAttribute("end")) ?? end;
-            lastSpan = nextSpan;
-            j++;
-          } else {
-            break;
-          }
+        if (isBrackets && currentLineWords.length > 0 && !currentLineWords[0].text.includes("(")) {
+          // Push existing main line words before starting the adlib line
+          lyrics.push({
+            time: currentLineWords[0].start,
+            text: currentLineWords.map(w => w.text).join(""),
+            words: [...currentLineWords],
+            isAdlib: false
+          });
+          currentLineWords = [];
         }
 
-        words.push({
-          text: combinedText,
-          start: combinedStart,
-          end: combinedEnd,
+        currentLineWords.push({ text, start, end });
+      });
+
+      // Push remaining words
+      if (currentLineWords.length > 0) {
+        lyrics.push({
+          time: currentLineWords[0].start,
+          text: currentLineWords.map(w => w.text).join(""),
+          words: currentLineWords,
+          isAdlib: currentLineWords[0].text.trim().startsWith("(")
         });
-
-        i = j - 1;
       }
-
-      lyrics.push({
-        time: start,
-        text: words.map(w => w.text).join(" "),
-        words,
-      });
-    } else {
-      // Verse-synced line
-      lyrics.push({
-        time: start,
-        text: (p.textContent || "").trim(),
-      });
     }
   }
 
-  // Sort by time just in case
-  lyrics.sort((a, b) => a.time - b.time);
-  return lyrics;
+  return lyrics.sort((a, b) => a.time - b.time);
 }
 
 function parseTime(t?: string | null): number {

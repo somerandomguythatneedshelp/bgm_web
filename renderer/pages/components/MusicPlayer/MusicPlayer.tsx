@@ -3,6 +3,8 @@ import { motion } from "framer-motion"
 import LyricsPlayer from "../LyricsPlayer/LyricsPlayer"
 import { parseStrToLocale } from "../../utils/Utils" 
 import ProfilePopup from "../ProfilePopup/ProfilePopup";
+import { Track } from "../../utils/Utils";
+import { send } from "process";
 
 export default function MusicPlayerUI({
   trackInfo,
@@ -282,7 +284,7 @@ export default function MusicPlayerUI({
       </div>
 
       <div className="w-full max-w-5xl space-y-6">
-        <SearchBar onSearch={onSearch} />
+        <SearchBar sendMessage={sendMessage} />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <button onClick={onShowPlaylists} className="group p-6 rounded-2xl bg-black/15 backdrop-blur-md border border-white/10 hover:bg-black/25 hover:border-white/20 text-left transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
             <div className="text-white font-semibold text-lg group-hover:text-white-300 transition-colors duration-300">{localePlTitle}</div>
@@ -302,45 +304,161 @@ export default function MusicPlayerUI({
   )
 }
 
-const SearchBar = ({ onSearch }) => {
-    const [query, setQuery] = useState("");
-    const [localeSearch, setLocaleSearch] = useState("Loading...");
+interface SearchBarProps {
+  sendMessage: (payload: string) => void;
+}
 
-    useEffect(() => {
-      (async () => {
+const SearchBar: React.FC<SearchBarProps> = ({ sendMessage }) => {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<Track[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [localeSearch, setLocaleSearch] = useState("Loading...");
+  
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    (async () => {
+      // @ts-ignore
+      if (typeof parseStrToLocale === 'function') {
+         // @ts-ignore
         setLocaleSearch(await parseStrToLocale("home_player.search_placeholder"));
-      })();
-    }, []);
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (query.trim()) {
-            onSearch(query.trim());
-            setQuery("");
-        }
+      } else {
+        setLocaleSearch("Search for a song...");
+      }
+    })();
+    
+    // Optional: Close dropdown when clicking outside
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setResults([]);
+      }
     };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-    return (
-      <form onSubmit={handleSubmit} className="mt-6">
-          <div className="relative">
-              <input
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder={localeSearch}
-                  className="w-full p-4 pl-12 rounded-xl bg-black/30 backdrop-blur-md border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white-500 transition-all duration-300"
-              />
-              <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-              </div>
-              <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-900 rounded-lg bg-white-600 hover:bg-white-700 transition-colors">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-              </button>
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+
+    setIsLoading(true);
+    setError(null);
+    setResults([]); 
+
+    try {
+      const url = `https://tune-mu.com/api/search?query=${encodeURIComponent(query.trim())}`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (!Array.isArray(data)) {
+        throw new Error("Invalid response");
+      }
+      setResults(data);
+    } catch (err) {
+      console.error(err);
+      setError("Search failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSelectTrack = (track: Track) => {
+    sendMessage(`Search: ~#!: ${track.song_name} - ${track.artist_name}`);
+    setResults([]);
+    setQuery("");
+  };
+
+  return (
+    <div className="relative mt-6 w-full z-50" ref={searchRef}>
+      {/* --- SEARCH INPUT --- */}
+      <form onSubmit={handleSearch}>
+        <div className="relative">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={localeSearch}
+            className="w-full p-4 pl-12 rounded-xl bg-black/30 backdrop-blur-md border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white-500 transition-all duration-300"
+          />
+          
+          <div className="absolute left-4 top-1/2 -translate-y-1/2">
+            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
           </div>
+
+          <button 
+            type="submit" 
+            disabled={isLoading}
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-900 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50"
+          >
+            {isLoading ? (
+              <svg className="animate-spin w-6 h-6 text-white" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
+            ) : (
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            )}
+          </button>
+        </div>
       </form>
-    );
-  }
+
+      {/* --- RESULTS DROPDOWN --- */}
+      {(results.length > 0 || error) && (
+        <div className="absolute top-full mt-2 left-0 w-full bg-neutral-900/95 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-2xl max-h-[60vh] overflow-y-auto custom-scrollbar">
+          
+          {error && <div className="p-4 text-center text-red-400">{error}</div>}
+
+          {results.length > 0 && (
+            <div className="divide-y divide-white/5">
+              {results.map((track) => (
+                <button
+                  key={track.song_id}
+                  onClick={() => handleSelectTrack(track)}
+                  className="w-full flex items-center gap-4 p-3 hover:bg-white/10 transition-colors group text-left"
+                >
+                  {/* --- COVER ART --- */}
+                  <div className="relative flex-shrink-0 w-12 h-12 bg-neutral-800 rounded-md overflow-hidden border border-white/10">
+                    {"https://tune-mu.com/music/" + track.artist_name + "/" + track.coverArtUrl ? (
+                      <img 
+                        src={"https://tune-mu.com/music/" + track.artist_name + "/" + track.coverArtUrl} 
+                        alt={track.album}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Fallback if image fails to load
+                          (e.target as HTMLImageElement).style.display = 'none';
+                          (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    
+                    {/* Fallback Icon (Note Icon) - Shown if no URL or if Load Fails */}
+                    <div className={`absolute inset-0 flex items-center justify-center bg-neutral-800 ${("https://tune-mu.com/music/" + track.artist_name + "/" + track.coverArtUrl) ? 'hidden' : ''}`}>
+                      <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* --- TEXT INFO --- */}
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-white font-medium truncate group-hover:text-blue-400 transition-colors">
+                      {track.song_name}
+                    </span>
+                    <span className="text-gray-400 text-sm truncate">
+                      {track.artist_name}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};

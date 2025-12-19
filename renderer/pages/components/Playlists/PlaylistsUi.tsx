@@ -10,6 +10,101 @@ interface PlaylistsUIProps {
   onGetPlaylistDetails: (playlistName: string) => void;
 }
 
+interface SearchOverlayProps {
+  onClose: () => void;
+  playlistName: string;
+  onTrackSelectAndAdd: (track: Track) => void;
+  sendMessage: (payload: string) => void;
+}
+
+const SearchOverlay: React.FC<SearchOverlayProps> = ({
+  onClose,
+  playlistName,
+  onTrackSelectAndAdd,
+  sendMessage,
+}) => {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<Track[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const url = `https://tune-mu.com/api/search?query=${encodeURIComponent(
+        query.trim()
+      )}`;
+
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (!Array.isArray(data)) {
+        throw new Error("Invalid response");
+      }
+
+      setResults(data);
+    } catch (err) {
+      console.error(err);
+      setError("Search failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-neutral-900 w-full max-w-lg max-h-[80vh] rounded-xl p-6 flex flex-col">
+        <h3 className="text-2xl font-bold text-white mb-4">
+          Search for a Song to Add to "{playlistName}"
+        </h3>
+
+        <form onSubmit={handleSearch} className="mb-4 flex gap-2">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="flex-grow p-3 rounded-lg bg-neutral-800 text-white"
+            placeholder="Song or Artist name..."
+          />
+          <button disabled={isLoading} className="p-3 bg-white/20 rounded-lg">
+            {isLoading ? "Searching..." : "Search"}
+          </button>
+        </form>
+
+        <div className="flex-grow overflow-y-auto space-y-2">
+          {results.map((track) => (
+            <button
+              key={track.song_id}
+              onClick={() => onTrackSelectAndAdd(track)}
+              className="w-full text-left p-3 rounded-md hover:bg-white/10"
+            >
+              <p className="text-white">{track.song_name}</p>
+              <p className="text-gray-400 text-sm">
+                {track.artist_name} – {track.album}
+              </p>
+            </button>
+          ))}
+
+          {!isLoading && !results.length && query && (
+            <p className="text-gray-500 text-center">No results</p>
+          )}
+
+          {error && <p className="text-red-400 text-center">{error}</p>}
+        </div>
+
+        <button onClick={onClose} className="mt-4 py-3 bg-gray-600 rounded-lg">
+          Close
+        </button>
+      </div>
+    </div>
+  );
+};
+
+
 export default function PlaylistsUi({
   playlists = {},
   currentTrack = null,
@@ -17,70 +112,6 @@ export default function PlaylistsUi({
   onBack,
   onGetPlaylistDetails,
 }: PlaylistsUIProps) {
-
-  const SearchOverlay = ({ onClose, playlistName, onTrackSelectAndAdd, sendMessage }) => {
-    const [query, setQuery] = useState('');
-    const [results, setResults] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
-
-    const handleSearch = async (e) => {
-        e.preventDefault();
-        if (!query.trim()) return;
-
-        setIsLoading(true);
-        setResults([]);
-        
-        sendMessage(`Search: ${query}`);
-        
-        setIsLoading(false);
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-neutral-900 w-full max-w-lg max-h-[80vh] rounded-xl shadow-2xl p-6 border border-white/10 flex flex-col">
-                <h3 className="text-2xl font-bold text-white mb-4">
-                  Search for a Song to Add to "{playlistName}"
-                </h3>
-                
-                {/* Search Form */}
-                <form onSubmit={handleSearch} className="mb-4 flex gap-2">
-                    <input
-                        type="text"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Song or Artist name..."
-                        className="flex-grow p-3 rounded-lg bg-neutral-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50"
-                    />
-                    <button type="submit" disabled={isLoading} className="p-3 bg-white/20 hover:bg-white/30 rounded-lg text-white disabled:opacity-50 transition-colors">
-                        {isLoading ? 'Searching...' : 'Search'}
-                    </button>
-                </form>
-
-                {/* Search Results Display */}
-                <div className="flex-grow overflow-y-auto space-y-2 pr-2">
-                    {results.map(track => (
-                        <button
-                            key={track.song_id}
-                            onClick={() => onTrackSelectAndAdd(track)}
-                            className="w-full text-left p-3 rounded-md bg-white/5 hover:bg-white/10 transition-colors"
-                        >
-                            <p className="text-white font-medium">{track.song_name}</p>
-                            <p className="text-gray-400 text-sm">{track.artist_name} - {track.album}</p>
-                        </button>
-                    ))}
-                    {!isLoading && results.length === 0 && query.trim() && (
-                        <p className="text-gray-500 text-center py-4">No results found.</p>
-                    )}
-                </div>
-
-                {/* Close Button */}
-                <button onClick={onClose} className="mt-4 py-3 rounded-lg bg-gray-600/50 text-white hover:bg-gray-600 transition-colors">
-                    Close
-                </button>
-            </div>
-        </div>
-    );
-};
 
 
   const [newPlaylistName, setNewPlaylistName] = useState("");
@@ -132,8 +163,8 @@ export default function PlaylistsUi({
   };
 
   const handleAddTrackToPlaylist = (playlistName: string) => {
-    if (currentTrack && typeof currentTrack.song_id === "number") {
-      sendMessage(`AddSongToPlaylist: ${playlistName}|${currentTrack.song_id}`);
+    if (currentTrack && typeof currentTrack.songId === "number") {
+      sendMessage(`AddSongToPlaylist: ${playlistName}|${currentTrack.songId}`);
     } else {
       console.error("Cannot add to playlist: Invalid songId.", currentTrack);
     }
@@ -356,16 +387,17 @@ export default function PlaylistsUi({
   </div>
 </div>
 {showSearchOverlay && (
-        <SearchOverlay 
-          onClose={handleCloseSearch} 
-          playlistName={name}
-          sendMessage={sendMessage}
-          onTrackSelectAndAdd={(track) => {
-            console.log(`Adding ${track.song_name} to playlist ${name}`);
-            handleCloseSearch(); // Close the overlay after selection
-          }}
-        />
-      )}
+  <SearchOverlay
+    onClose={handleCloseSearch}
+    playlistName={name}
+    sendMessage={sendMessage}
+    onTrackSelectAndAdd={(track) => {
+      console.log(`Adding ${track.song_name} to playlist ${name}`);
+      handleCloseSearch();
+    }}
+  />
+)}
+
 
 
                 </div>

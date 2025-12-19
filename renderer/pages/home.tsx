@@ -5,6 +5,7 @@ import { parseStrToLocale, parseTTML, Track } from "./utils/Utils";
 import { parse } from "path";
 import MusicPlayerUI from "./components/MusicPlayer/MusicPlayer";
 import PlaylistsUi from "./components/Playlists/PlaylistsUi";
+import axios, { AxiosResponse, AxiosRequestConfig, RawAxiosRequestHeaders } from 'axios';
 
 const AuthIcon = () => (
   <svg
@@ -245,7 +246,7 @@ export default function HomePage() {
 
       socket.onmessage = (event) => {
         try {
-          console.log("[WS] Received message:", event.data);
+          //console.log("[WS] Received message:", event.data);
           const data = JSON.parse(event.data);
           if (data.type === "playback_position") {
             console.log("[Debug] Received playback_position data:", data);
@@ -373,7 +374,31 @@ export default function HomePage() {
       };
     }
 
-    initConnection();
+    const isEc2Running = async () => {
+  try {
+    const response = await axios.get(
+      'https://utabigtgtaov4nxgmoo6ajr43e0rrmhm.lambda-url.eu-west-2.on.aws/'
+    );
+    const data = response.data;
+    console.log(data);
+
+    if (data.status === 'already_running') {
+      initConnection();
+    } else if (data.status === 'starting' || data.status.startsWith('busy')) {
+      console.log('EC2 not ready yet, retrying in 5s...');
+      setTimeout(isEc2Running, 5000); // retry after 5 seconds
+    } else {
+      console.log('EC2 status:', data.status);
+    }
+  } catch (err) {
+    console.error('Lambda call failed', err);
+    setTimeout(isEc2Running, 5000); // retry on network error
+  }
+};
+
+
+
+    isEc2Running();
 
     return () => {
       if (socket) socket.close();
